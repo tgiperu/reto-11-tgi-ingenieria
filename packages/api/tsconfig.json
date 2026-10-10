@@ -1,0 +1,7 @@
+{
+  "extends": "@reto-11-tgi-ingenieria/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "strictNullChecks": true
+  }
+}

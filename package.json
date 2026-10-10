@@ -1,0 +1,72 @@
+{
+  "name": "reto-11-tgi-ingenieria",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
+    "catalog": {
+      "zod": "^4.5.4",
+      "@types/bun": "^1.4.2",
+      "varlock": "1.18.0",
+      "@trpc/server": "^11.18.0",
+      "better-auth": "1.7.7",
+      "lucide-react": "^1.41.0",
+      "next-themes": "^0.4.6",
+      "sonner": "^2.0.8",
+      "@trpc/tanstack-react-query": "^11.18.0",
+      "@trpc/client": "^11.18.0",
+      "@tanstack/react-query": "^5.102.8",
+      "@tanstack/react-form": "^1.33.5",
+      "@types/node": "^26.4.1",
+      "@types/react-dom": "^19.2.7",
+      "tailwindcss": "^4.3.3",
+      "@better-auth/expo": "1.7.7",
+      "drizzle-orm": "1.0.0-rc.4"
+    }
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vp run -r dev",
+    "build": "vp run -r build",
+    "check-types": "vp run -r check-types",
+    "check": "ultracite check",
+    "lint": "vp lint",
+    "format": "vp fmt",
+    "staged": "vp staged",
+    "hooks:setup": "vp config",
+    "dev:native": "vp run --filter native dev",
+    "dev:web": "vp run --filter web dev",
+    "dev:server": "vp run --filter server dev",
+    "db:push": "vp run --filter @reto-11-tgi-ingenieria/db db:push",
+    "db:studio": "vp run --filter @reto-11-tgi-ingenieria/db db:studio",
+    "db:generate": "vp run --filter @reto-11-tgi-ingenieria/db db:generate",
+    "db:migrate": "vp run --filter @reto-11-tgi-ingenieria/db db:migrate",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./apps/native/ && varlock codegen --path ./packages/db/",
+    "postinstall": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./apps/native/ && varlock codegen --path ./packages/db/",
+    "auth:generate": "cd apps/server && bun run auth:generate",
+    "fix": "ultracite fix"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.12",
+    "@reto-11-tgi-ingenieria/config": "workspace:*",
+    "@types/bun": "catalog:",
+    "rolldown": "1.2.7",
+    "typescript": "^6.0.3",
+    "ultracite": "7.11.0",
+    "varlock": "catalog:",
+    "vite-plus": "0.3.1"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.1"
+  },
+  "packageManager": "bun@1.4.3"
+}

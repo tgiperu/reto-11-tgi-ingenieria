@@ -1,0 +1,22 @@
+{
+  "name": "@reto-11-tgi-ingenieria/api",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@reto-11-tgi-ingenieria/auth": "workspace:*",
+    "@reto-11-tgi-ingenieria/db": "workspace:*",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@reto-11-tgi-ingenieria/config": "workspace:*",
+    "typescript": "^6.0.3"
+  }
+}
