@@ -32,6 +32,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/app/button";
 import { Combobox, type ComboItem } from "@/components/app/combobox";
+import { HelpLabel } from "@/components/app/help-tip";
 import { fmtIsoDay, fmtNum, plural, shortClock } from "@/lib/format";
 import {
   campoDb,
@@ -593,42 +594,15 @@ export function RegistroForm({ editId }: { editId?: string }) {
       title={editing ? "Editar registro" : "Ficha de registro"}
     >
       <div className="flex flex-1 flex-col gap-3.5 px-4 pt-3.5 pb-4">
-        <Combobox
-          headline={(n) => plural(n, "estrato", "estratos")}
-          items={stratumItems}
-          label="Estrato"
-          onPick={setStratum}
-          placeholder="Buscar estrato"
-          selected={stratum}
-        />
-        <Combobox
-          headline={(n, all) =>
-            `${all ? "Tus parcelas asignadas, la más cercana primero · " : ""}${plural(n, "resultado", "resultados")}`
-          }
-          hint={plotNumber === null ? NEAREST_HINT : NEAREST_HINT}
-          items={plotItems}
-          label="Parcela"
-          onPick={(id) => setPlotNumber(id)}
-          placeholder="Buscar N° o sector"
-          selected={plotNumber}
-        />
-        <Combobox
-          headline={(n) => plural(n, "categoría", "categorías")}
-          hint={`${CATEGORIES[category].criterion} · subparcela r ${CATEGORIES[category].radiusM} m`}
-          items={categoryItems}
-          label="Categoría"
-          onPick={setCategory}
-          placeholder="Buscar categoría"
-          selected={category}
-        />
-
         <div className="flex flex-col gap-1.5">
-          <label
+          <HelpLabel
             className="font-semibold text-[13px] text-ink-2"
+            help="Número de la placa metálica clavada en el árbol. Si ya existe en la parcela, se registra como remedición; si no, como árbol nuevo."
             htmlFor="campo-codigo"
+            label="Código del árbol"
           >
             Código del árbol (N° de placa)
-          </label>
+          </HelpLabel>
           <input
             autoComplete="off"
             className={cn(
@@ -680,10 +654,43 @@ export function RegistroForm({ editId }: { editId?: string }) {
         ) : null}
 
         <Combobox
+          headline={(n) => plural(n, "estrato", "estratos")}
+          help="Grupo de parcelas con características similares (tipo de bosque). Al elegirlo se filtran las parcelas."
+          items={stratumItems}
+          label="Estrato"
+          onPick={setStratum}
+          placeholder="Buscar estrato"
+          selected={stratum}
+        />
+        <Combobox
+          headline={(n, all) =>
+            `${all ? "Tus parcelas asignadas, la más cercana primero · " : ""}${plural(n, "resultado", "resultados")}`
+          }
+          help="Parcela circular donde estás midiendo. Se sugiere la más cercana por GPS; cámbiala si estás en otra."
+          hint={plotNumber === null ? NEAREST_HINT : NEAREST_HINT}
+          items={plotItems}
+          label="Parcela"
+          onPick={(id) => setPlotNumber(id)}
+          placeholder="Buscar N° o sector"
+          selected={plotNumber}
+        />
+        <Combobox
+          headline={(n) => plural(n, "categoría", "categorías")}
+          help="Clase del individuo según su tamaño: latizal alto, fustal, arbusto grande o brinzal. Define el radio de la subparcela."
+          hint={`${CATEGORIES[category].criterion} · subparcela r ${CATEGORIES[category].radiusM} m`}
+          items={categoryItems}
+          label="Categoría"
+          onPick={setCategory}
+          placeholder="Buscar categoría"
+          selected={category}
+        />
+
+        <Combobox
           emptyLabel="Sin resultados · registrar como NN (foto obligatoria)"
           headline={(n, all) =>
             `${all ? "Más registradas primero · " : ""}${plural(n, "resultado", "resultados")}`
           }
+          help="Nombre común de la especie. Si no la reconoces, regístrala como NN y toma una foto."
           hint={speciesHint(sp)}
           items={speciesItems}
           label="Especie (nombre común)"
@@ -720,9 +727,9 @@ export function RegistroForm({ editId }: { editId?: string }) {
         {category === "br" ? null : (
           <HeightSection
             computed={clinoHeight === null ? "—" : clinoHeight.toFixed(2)}
-            error={heightIssue}
             direct={hDirect}
             dist={dist}
+            error={heightIssue}
             mode={hMode}
             onDirect={setHDirect}
             onDist={setDist}
@@ -750,10 +757,15 @@ export function RegistroForm({ editId }: { editId?: string }) {
         />
 
         <section className="flex flex-col gap-1.5">
-          <label className="font-semibold text-sm" htmlFor="campo-obs">
+          <HelpLabel
+            className="font-semibold text-sm"
+            help="Cualquier detalle útil para el supervisor: inclinación, ramas secas, dónde se midió el DAP, etc."
+            htmlFor="campo-obs"
+            label="Observaciones"
+          >
             Observaciones{" "}
             <span className="font-normal text-ink-3">(opcional)</span>
-          </label>
+          </HelpLabel>
           <textarea
             className="min-h-[84px] w-full resize-y rounded-md border border-field bg-white px-3 py-2.5 text-base"
             id="campo-obs"
