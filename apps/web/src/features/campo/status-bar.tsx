@@ -1,6 +1,14 @@
 import { healthLabel } from "@reto-11-tgi-ingenieria/domain/health";
 import { cn } from "@reto-11-tgi-ingenieria/ui/lib/utils";
-import { Download, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { useLiveQuery } from "dexie-react-hooks";
+import {
+  Download,
+  HardDriveDownload,
+  RefreshCw,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { fmtDateTime } from "@/lib/format";
@@ -12,21 +20,27 @@ import { useBundleMeta, usePendingCount } from "./hooks";
 
 type Theme = "offline" | "syncing" | "ok";
 
-const THEMES: Record<Theme, { bar: string; btn: string; badge: string }> = {
+const THEMES: Record<
+  Theme,
+  { bar: string; btn: string; badge: string; ready: string }
+> = {
   offline: {
     badge: "bg-crit text-white",
     bar: "bg-warn text-ink",
     btn: "text-ink",
+    ready: "bg-primary",
   },
   ok: {
     badge: "bg-signal text-primary",
     bar: "bg-black text-signal",
     btn: "text-white",
+    ready: "bg-signal",
   },
   syncing: {
     badge: "bg-white text-primary",
     bar: "bg-info text-white",
     btn: "text-white",
+    ready: "bg-white",
   },
 };
 
@@ -82,13 +96,15 @@ export function StatusBar() {
   const { online, phase, message } = useSyncState();
   const pending = usePendingCount();
   const bundle = useBundleMeta();
+  const plotCount = useLiveQuery(() => campoDb.plots.count(), [], 0);
+  const offlineReady = plotCount > 0 && Boolean(bundle);
   const [note, setNote] = useState("");
 
   let theme: Theme = "ok";
   let text = "Conectado";
   if (!online) {
     theme = "offline";
-    text = `Sin conexión · ${pending} sin enviar`;
+    text = "Sin conexión";
   } else if (phase === "syncing") {
     theme = "syncing";
     text = message || "Conectado · sincronizando…";
@@ -154,6 +170,32 @@ export function StatusBar() {
         <WifiOff aria-hidden="true" size={16} />
       )}
       <span className="min-w-0 flex-1">{note || text}</span>
+      <Link
+        aria-label={
+          offlineReady
+            ? "Listo para trabajar sin señal. Actualizar datos"
+            : "Preparar el equipo para trabajar sin señal"
+        }
+        className={cn(
+          "relative flex size-11 items-center justify-center",
+          t.btn
+        )}
+        title={
+          offlineReady
+            ? `Listo para trabajar sin señal · datos del ${fmtDateTime(bundle ? new Date(bundle.downloadedAt) : null)}`
+            : "Prepara el equipo para trabajar sin señal"
+        }
+        to="/campo/instalar"
+      >
+        <HardDriveDownload aria-hidden="true" size={22} />
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute top-1.5 right-1.5 size-3 rounded-full",
+            offlineReady ? t.ready : "bg-crit"
+          )}
+        />
+      </Link>
       <button
         aria-label={label}
         className={cn(

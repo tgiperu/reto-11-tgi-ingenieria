@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
-  CircleCheck,
   LogOut,
   Monitor,
   Plus,
@@ -14,7 +13,7 @@ import { EmptyState } from "@/components/app/panel";
 import { FieldShell } from "@/features/campo/field-shell";
 import { useBundleMeta, useNow } from "@/features/campo/hooks";
 import { RecordRow } from "@/features/campo/record-row";
-import { fmtDateTime, shortClock } from "@/lib/format";
+import { shortClock } from "@/lib/format";
 import { campoDb } from "@/lib/offline/db";
 import { signOut } from "@/lib/session";
 
@@ -117,19 +116,7 @@ function FieldHome() {
         </div>
       }
     >
-      {ready ? (
-        <Link
-          className="flex min-h-12 flex-none items-center gap-2.5 rounded-lg bg-ok-bg px-3 text-ok-fg text-sm no-underline"
-          to="/campo/instalar"
-        >
-          <CircleCheck aria-hidden="true" className="flex-none" size={18} />
-          <span className="flex-1">
-            <strong>Listo para trabajar sin señal.</strong> Datos del{" "}
-            {fmtDateTime(bundle ? new Date(bundle.downloadedAt) : null)}
-          </span>
-          <span className="font-semibold underline">Actualizar</span>
-        </Link>
-      ) : (
+      {ready ? null : (
         <section
           className="flex flex-none flex-col gap-2 rounded-lg border border-warn-edge bg-warn-bg p-3.5 text-sm text-warn-fg"
           role="status"
