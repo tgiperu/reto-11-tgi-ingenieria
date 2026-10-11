@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/app/button";
 import { SelectField, TextAreaField, TextField } from "@/components/app/field";
 import { Modal } from "@/components/app/modal";
-import { fmtDateTime, fmtNum, fmtTime } from "@/lib/format";
+import { fmtDateTime, fmtNum } from "@/lib/format";
 import { trpc } from "@/utils/trpc";
 
 export function ReasonModal({
@@ -136,29 +136,38 @@ export function AssignModal({
   );
 }
 
+/** Lo que ya se sabe de la medición al abrir la evidencia: el título no espera a la foto. */
+export interface PhotoTarget {
+  at?: string;
+  id: string;
+  plot: number;
+  species: string;
+}
+
 export function PhotoModal({
-  id,
+  target,
   onClose,
 }: {
-  id: string | null;
+  target: PhotoTarget | null;
   onClose: () => void;
 }) {
+  const id = target?.id ?? null;
   const photo = useQuery({
     ...trpc.plots.photo.queryOptions({ id: id ?? "" }),
     enabled: id !== null,
   });
   const [zoom, setZoom] = useState(false);
   const info = photo.data;
-  const title = info
-    ? `${info.species} · ${fmtTime(info.createdAt)} · P-${info.plot}`
-    : "Evidencia";
+  const source =
+    target ?? (info ? { plot: info.plot, species: info.species } : null);
+  const title = source ? `${source.species} · P-${source.plot}` : "Evidencia";
   return (
     <Modal
       onClose={() => {
         setZoom(false);
         onClose();
       }}
-      open={id !== null}
+      open={target !== null}
       size="lg"
       title={title}
     >
@@ -179,6 +188,13 @@ export function PhotoModal({
             {info.height === null ? null : (
               <span className="font-mono">Altura {fmtNum(info.height)} m</span>
             )}
+            <a
+              className="ml-auto inline-flex min-h-9 items-center gap-1.5 font-semibold text-[13px] text-ink-2 hover:text-ink hover:underline"
+              download={`evidencia-P${info.plot}-${info.code}.jpg`}
+              href={info.dataUrl}
+            >
+              <Download aria-hidden="true" size={16} /> Descargar
+            </a>
           </div>
           <div
             className={`overflow-auto rounded-lg bg-sunken ${zoom ? "max-h-[65vh]" : ""}`}
@@ -202,18 +218,9 @@ export function PhotoModal({
               title={zoom ? "Reducir" : "Ampliar"}
             />
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-ink-3 text-xs">
-              Haz clic en la imagen para {zoom ? "reducirla" : "ampliarla"}.
-            </span>
-            <a
-              className="inline-flex min-h-9 items-center gap-1.5 font-semibold text-[13px] text-ink-2 hover:text-ink hover:underline"
-              download={`evidencia-P${info.plot}-${info.code}.jpg`}
-              href={info.dataUrl}
-            >
-              <Download aria-hidden="true" size={16} /> Descargar
-            </a>
-          </div>
+          <span className="text-ink-3 text-xs">
+            Haz clic en la imagen para {zoom ? "reducirla" : "ampliarla"}.
+          </span>
         </>
       ) : null}
       {photo.data === null ? (

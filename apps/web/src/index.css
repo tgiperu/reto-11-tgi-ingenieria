@@ -425,3 +425,12 @@ input.outline-none:focus-visible {
 .table-scroll::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* Formularios: al escribir o elegir no se dibuja el contorno negro; solo el borde pasa a gris medio. */
+input:not([type="checkbox"], [type="radio"], [type="range"]):focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--color-field);
+  box-shadow: none;
+}

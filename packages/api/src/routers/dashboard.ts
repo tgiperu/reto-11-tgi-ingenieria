@@ -188,7 +188,44 @@ export const dashboardRouter = router({
       WHERE ${where} AND ${variableCondition(input.variable)}
       ORDER BY m.measured_at DESC
     `);
+    // Reservorios por parcela (suma de la última medición de cada individuo, tC/ha).
+    // Solo respeta los filtros propios de la parcela: ANP y estrato.
+    const plotParts = [sql`true`];
+    if (input.anp !== "all") {
+      plotParts.push(sql`p.anp = ${input.anp}`);
+    }
+    if (input.stratum !== "all") {
+      plotParts.push(sql`p.stratum = ${input.stratum}`);
+    }
+    const carbon = await ctx.db.execute<{
+      aerial: number;
+      number: number;
+      root: number;
+      stratum: string;
+      total: number;
+    }>(sql`
+      WITH latest AS (
+        SELECT DISTINCT ON (tree_id) *
+        FROM measurement
+        ORDER BY tree_id, measured_at DESC
+      )
+      SELECT p.number, p.stratum,
+             coalesce(sum(l.carbon_aerial), 0)::float AS aerial,
+             coalesce(sum(l.carbon_root), 0)::float AS root,
+             coalesce(sum(l.carbon_total), 0)::float AS total
+      FROM plot p LEFT JOIN latest l ON l.plot_number = p.number
+      WHERE ${sql.join(plotParts, sql` AND `)}
+      GROUP BY p.number, p.stratum
+      ORDER BY p.number
+    `);
     return {
+      plots: carbon.rows.map((r) => ({
+        aerial: r.aerial,
+        number: r.number,
+        root: r.root,
+        stratum: r.stratum,
+        total: r.total,
+      })),
       outliers: rows.rows.map((r) => ({
         brigade: r.leader ?? r.brigade_id,
         code: r.code,

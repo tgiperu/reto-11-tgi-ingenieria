@@ -38,7 +38,6 @@ export function UserModal({
 }) {
   const queryClient = useQueryClient();
   const roles = useQuery(trpc.access.roles.list.queryOptions());
-  const brigades = useQuery(trpc.catalog.brigades.list.queryOptions());
   const [form, setForm] = useState<UserEdit>(
     value ?? { brigadeId: null, email: "", id: null, name: "", roleId: "" }
   );
@@ -124,33 +123,17 @@ export function UserModal({
         type="email"
         value={form.email}
       />
-      <div className="grid grid-cols-2 gap-3">
-        <SelectField
-          label="Rol"
-          onChange={(e) => setForm({ ...form, roleId: e.target.value })}
-          value={roleId}
-        >
-          {roles.data?.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </SelectField>
-        <SelectField
-          label="Brigada"
-          onChange={(e) =>
-            setForm({ ...form, brigadeId: e.target.value || null })
-          }
-          value={form.brigadeId ?? ""}
-        >
-          <option value="">Sin brigada</option>
-          {brigades.data?.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.id} · {b.leaderName}
-            </option>
-          ))}
-        </SelectField>
-      </div>
+      <SelectField
+        label="Rol"
+        onChange={(e) => setForm({ ...form, roleId: e.target.value })}
+        value={roleId}
+      >
+        {roles.data?.map((r) => (
+          <option key={r.id} value={r.id}>
+            {r.name}
+          </option>
+        ))}
+      </SelectField>
       <TextField
         autoComplete="new-password"
         hint={
