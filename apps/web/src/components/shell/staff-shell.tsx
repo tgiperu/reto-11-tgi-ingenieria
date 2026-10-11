@@ -13,7 +13,6 @@ import {
   LogOut,
   Map as MapIcon,
   RefreshCw,
-  Smartphone,
   Square,
   TriangleAlert,
 } from "lucide-react";
@@ -202,13 +201,6 @@ export function StaffShell({ session }: { session: CachedSession }) {
               size={16}
             />
           </button>
-          <Link
-            className="flex min-h-11 items-center gap-2 rounded-md bg-sec-campo px-3 font-semibold text-sm text-white hover:brightness-110 sm:px-3.5"
-            to="/campo"
-          >
-            <Smartphone aria-hidden size={16} />
-            Modo campo
-          </Link>
           <span className="hidden h-6 w-px bg-line xl:block" />
           <span className="hidden flex-col text-right leading-tight xl:flex">
             <span className="font-semibold text-[13px]">

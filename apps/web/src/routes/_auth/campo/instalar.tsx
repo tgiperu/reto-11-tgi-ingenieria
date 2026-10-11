@@ -1,7 +1,7 @@
 import { cn } from "@reto-11-tgi-ingenieria/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Check, Download, RefreshCw } from "lucide-react";
+import { Check, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -15,17 +15,12 @@ import {
   isStoragePersistent,
   requestPersistentStorage,
   storageUsageMb,
-  useInstallPrompt,
 } from "@/lib/pwa";
 import { getCachedSession } from "@/lib/session";
 
 export const Route = createFileRoute("/_auth/campo/instalar")({
   component: InstallPage,
 });
-
-const IOS_PATTERN = /iPhone|iPad|iPod/;
-
-type Platform = "android" | "ios";
 
 function CheckRow({
   label,
@@ -65,10 +60,6 @@ function InstallPage() {
   const plots = useLiveQuery(() => campoDb.plots.count(), [], 0);
   const speciesCount = useLiveQuery(() => campoDb.species.count(), [], 0);
   const { online, phase } = useSyncState();
-  const install = useInstallPrompt();
-  const [platform, setPlatform] = useState<Platform>(
-    IOS_PATTERN.test(navigator.userAgent) ? "ios" : "android"
-  );
   const [persistent, setPersistent] = useState(false);
   const [usage, setUsage] = useState<number | null>(null);
   const [offlineApp, setOfflineApp] = useState(false);
@@ -130,87 +121,9 @@ function InstallPage() {
         </div>
       }
     >
-      <section className="flex flex-col gap-2.5 rounded-lg border border-line bg-white p-3.5">
-        <div className="flex items-center justify-between">
-          <strong className="text-[15px]">1 · Instalar la app</strong>
-          <fieldset
-            aria-label="Tipo de celular"
-            className="m-0 flex min-w-0 gap-1 rounded-md border-0 bg-sunken p-[3px]"
-          >
-            {(
-              [
-                ["android", "Android"],
-                ["ios", "iPhone"],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                aria-pressed={platform === id}
-                className={cn(
-                  "min-h-9 cursor-pointer rounded-lg border-0 px-3 text-[13px]",
-                  platform === id
-                    ? "bg-white font-semibold shadow-sm"
-                    : "bg-transparent text-ink-2"
-                )}
-                key={id}
-                onClick={() => setPlatform(id)}
-                type="button"
-              >
-                {label}
-              </button>
-            ))}
-          </fieldset>
-        </div>
-        {install.installed ? (
-          <p className="flex items-center gap-2 text-[13px] text-ok-fg">
-            <Check aria-hidden="true" size={16} /> La app ya está instalada en
-            este equipo.
-          </p>
-        ) : null}
-        {platform === "android" && !install.installed ? (
-          <div className="flex flex-col gap-2">
-            <span className="text-[13px] text-ink-2">
-              Se agrega como app con ícono propio y abre sin barra del
-              navegador.
-            </span>
-            <Button
-              className="!text-[15px]"
-              disabled={!install.canInstall}
-              onClick={() => install.install()}
-              size="lg"
-              variant="primary"
-            >
-              <Download aria-hidden="true" size={18} /> Instalar app
-            </Button>
-            {install.canInstall ? null : (
-              <span className="text-ink-3 text-xs">
-                Si el botón no se activa, abre el menú del navegador (⋮) y elige
-                “Instalar app” o “Agregar a la pantalla de inicio”.
-              </span>
-            )}
-          </div>
-        ) : null}
-        {platform === "ios" ? (
-          <ol className="m-0 flex flex-col gap-1.5 pl-5 text-[13px]">
-            <li>
-              Abre esta página en <strong>Safari</strong>.
-            </li>
-            <li>
-              Toca <strong>Compartir</strong> (cuadro con flecha hacia arriba).
-            </li>
-            <li>
-              Elige <strong>Añadir a pantalla de inicio</strong> y confirma.
-            </li>
-            <li>
-              Abre la app desde el nuevo ícono. Sin instalar, Safari puede
-              borrar los datos.
-            </li>
-          </ol>
-        ) : null}
-      </section>
-
       <section className="flex flex-col gap-1 rounded-lg border border-line bg-white p-3.5">
         <strong className="mb-1.5 text-[15px]">
-          2 · Descargar para trabajar sin señal
+          Descargar para trabajar sin señal
         </strong>
         <CheckRow
           detail="Válida 30 días sin conexión"
