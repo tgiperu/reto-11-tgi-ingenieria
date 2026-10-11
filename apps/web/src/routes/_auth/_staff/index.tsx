@@ -7,14 +7,12 @@ import {
   ListFilter,
   Ruler,
   TriangleAlert,
-  X,
 } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/app/button";
 import type { ComboItem } from "@/components/app/combobox";
-import { Notice } from "@/components/app/panel";
 import { exportOutliers } from "@/features/panel/export";
 import { Feed } from "@/features/panel/feed";
 import {
@@ -23,8 +21,8 @@ import {
   type PanelFilters,
 } from "@/features/panel/filters";
 import { SpeciesRanges } from "@/features/panel/species-ranges";
-import { PhotoModal } from "@/features/parcelas/modals";
-import { fmtInt, fmtTimeSeconds } from "@/lib/format";
+import { PhotoModal, type PhotoTarget } from "@/features/parcelas/modals";
+import { fmtInt } from "@/lib/format";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/_auth/_staff/")({
@@ -50,14 +48,14 @@ function Kpi({
     warn: "text-warn-fg",
   }[tone];
   return (
-    <div className="flex min-w-0 flex-col items-start gap-1 px-4 py-3">
+    <div className="flex min-w-0 items-center justify-between gap-3 px-4 py-3.5">
       <span
-        className={`flex items-center gap-1.5 font-semibold text-xs ${color}`}
+        className={`flex min-w-0 items-center gap-2 font-semibold text-sm ${color}`}
       >
         <span aria-hidden="true">{icon}</span>
         <span className="truncate">{label}</span>
       </span>
-      <span className="font-mono font-semibold text-[30px] leading-none">
+      <span className="font-mono font-semibold text-2xl leading-none">
         {fmtInt(value)}
       </span>
     </div>
@@ -72,7 +70,7 @@ function PanelPage() {
   const [feedPage, setFeedPage] = useState(0);
   const [speciesPage, setSpeciesPage] = useState(0);
   const [speciesFilterId, setSpeciesFilterId] = useState(0);
-  const [photoId, setPhotoId] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<PhotoTarget | null>(null);
 
   const overview = useQuery({
     ...trpc.dashboard.overview.queryOptions({
@@ -148,7 +146,7 @@ function PanelPage() {
       );
       const summary = await exportOutliers(rows, speciesName, filters.variable);
       toast.success("Excel exportado", {
-        description: `${summary.fileName} · ${summary.species} especies · ${summary.rowsDap} DAP · ${summary.rowsAlt} altura`,
+        description: `${summary.fileName} · ${summary.species} especies · ${summary.rowsDap} DAP · ${summary.rowsAlt} altura · ${summary.plots} parcelas`,
       });
     } catch (error) {
       toast.error(
@@ -167,13 +165,6 @@ function PanelPage() {
           <h1 className="text-balance font-bold text-[26px] leading-tight tracking-tight">
             Validación de diámetros y alturas atípicas
           </h1>
-          <span className="flex items-center gap-2 font-medium text-[13px] text-ok-fg">
-            <span className="live-dot size-[9px] rounded-full bg-ok" />
-            En vivo · última medición recibida{" "}
-            <span className="font-mono">
-              {data?.lastReceivedAt ? fmtTimeSeconds(data.lastReceivedAt) : "—"}
-            </span>
-          </span>
         </div>
         <Button
           aria-label="Exportar a Excel"
@@ -246,7 +237,14 @@ function PanelPage() {
           resolve.mutate({ action: "accept", measurementId })
         }
         onPage={setFeedPage}
-        onPhoto={setPhotoId}
+        onPhoto={(item) =>
+          setPhoto({
+            at: item.syncedAt,
+            id: item.measurementId,
+            plot: item.plot,
+            species: item.species,
+          })
+        }
         onRemeasure={(measurementId) =>
           resolve.mutate({ action: "remeasure", measurementId })
         }
@@ -257,7 +255,7 @@ function PanelPage() {
         total={data?.feedTotal ?? 0}
       />
 
-      <PhotoModal id={photoId} onClose={() => setPhotoId(null)} />
+      <PhotoModal onClose={() => setPhoto(null)} target={photo} />
 
       <SpeciesRanges
         filterId={speciesFilterId}

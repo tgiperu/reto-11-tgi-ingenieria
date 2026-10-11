@@ -105,7 +105,7 @@ export function Combobox<T extends string | number>({
           className={cn(
             "flex items-center gap-2 rounded-md bg-white py-0 pr-1.5 pl-3",
             compact ? "min-h-10" : "min-h-[52px]",
-            open ? "border-2 border-primary" : "border border-field",
+            "border border-field",
             disabled && "opacity-60"
           )}
         >

@@ -122,7 +122,7 @@ export function Th({
   return (
     <th
       className={cn(
-        "sticky top-0 z-10 bg-sunken px-2 py-2.5 text-left font-semibold text-ink-3 text-xs uppercase tracking-wider first:pl-4 last:pr-4",
+        "sticky top-0 z-10 whitespace-nowrap bg-sunken px-2 py-2.5 text-left font-semibold text-ink-3 text-xs uppercase tracking-wider first:pl-4 last:pr-4",
         className
       )}
       {...rest}

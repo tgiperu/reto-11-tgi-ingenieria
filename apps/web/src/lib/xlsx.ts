@@ -1,4 +1,4 @@
-import type { Cell } from "exceljs";
+import type { Cell, Worksheet } from "exceljs";
 
 export type Grid = unknown[][];
 
@@ -128,6 +128,8 @@ export interface SheetData {
   headers: string[];
   name: string;
   rows: unknown[][];
+  /** Hoja con formato de tabla (bordes, encabezado claro y filtros) y una celda de total opcional. */
+  table?: { total?: { column: number; value: number } };
   widths?: number[];
 }
 
@@ -146,6 +148,63 @@ function saveBlob(blob: Blob, fileName: string): void {
   setTimeout(() => URL.revokeObjectURL(url), BYTES_PER_KB);
 }
 
+const TABLE_HEADER_FILL = "FFD9E1F2";
+const TOTAL_FILL = "FFFFE699";
+const THIN_BORDER = {
+  bottom: { style: "thin" as const },
+  left: { style: "thin" as const },
+  right: { style: "thin" as const },
+  top: { style: "thin" as const },
+};
+const TABLE_WIDTHS = [11, 22, 24, 24, 20];
+
+/** Formato tipo tabla dinámica: encabezado azul claro con filtros, celdas con borde y total resaltado. */
+function styleTableSheet(
+  ws: Worksheet,
+  data: SheetData
+): void {
+  const header = ws.getRow(1);
+  header.height = 32;
+  header.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: "FF1F2D4D" } };
+    cell.fill = {
+      fgColor: { argb: TABLE_HEADER_FILL },
+      pattern: "solid",
+      type: "pattern",
+    };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    cell.border = THIN_BORDER;
+  });
+  for (let r = 2; r <= data.rows.length + 1; r += 1) {
+    ws.getRow(r).eachCell({ includeEmpty: true }, (cell, col) => {
+      if (col <= data.headers.length) {
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.border = THIN_BORDER;
+      }
+    });
+  }
+  const total = data.table?.total;
+  if (total) {
+    const cell = ws.getCell(data.rows.length + 2, total.column);
+    cell.value = total.value;
+    cell.font = { bold: true };
+    cell.fill = {
+      fgColor: { argb: TOTAL_FILL },
+      pattern: "solid",
+      type: "pattern",
+    };
+    cell.alignment = { horizontal: "center", vertical: "middle" };
+  }
+  ws.autoFilter = {
+    from: { column: 1, row: 1 },
+    to: { column: data.headers.length, row: 1 },
+  };
+  ws.views = [{ state: "frozen", ySplit: 1 }];
+  for (const [i] of data.headers.entries()) {
+    ws.getColumn(i + 1).width = data.widths?.[i] ?? TABLE_WIDTHS[i] ?? 18;
+  }
+}
+
 export async function downloadWorkbook(
   fileName: string,
   sheets: readonly SheetData[]
@@ -158,6 +217,10 @@ export async function downloadWorkbook(
     ws.addRow(data.headers);
     for (const row of data.rows) {
       ws.addRow(row);
+    }
+    if (data.table) {
+      styleTableSheet(ws, data);
+      continue;
     }
     const header = ws.getRow(1);
     header.font = { bold: true, color: { argb: "FFFFFFFF" } };

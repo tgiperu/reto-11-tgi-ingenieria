@@ -245,20 +245,6 @@ export const alertsRouter = router({
         activeCount: draft.filter((s) => s.active).length,
         dirty: !sameSettings(draft, published.settings),
         rules: [
-          ...RULE_LIST.map((meta) => {
-            const setting = draft.find((s) => s.key === meta.key);
-            return {
-              ...meta,
-              active: setting?.active ?? true,
-              custom: false,
-              hits:
-                meta.key === "coord"
-                  ? (coordHits?.n ?? 0)
-                  : (hits.get(meta.key) ?? 0),
-              hitsUnit: meta.key === "coord" ? "parcelas" : "",
-              param: setting?.param ?? null,
-            };
-          }),
           ...draft.flatMap((setting) => {
             const meta = customRuleMeta(setting);
             return meta
@@ -273,6 +259,20 @@ export const alertsRouter = router({
                   },
                 ]
               : [];
+          }),
+          ...RULE_LIST.map((meta) => {
+            const setting = draft.find((s) => s.key === meta.key);
+            return {
+              ...meta,
+              active: setting?.active ?? true,
+              custom: false,
+              hits:
+                meta.key === "coord"
+                  ? (coordHits?.n ?? 0)
+                  : (hits.get(meta.key) ?? 0),
+              hitsUnit: meta.key === "coord" ? "parcelas" : "",
+              param: setting?.param ?? null,
+            };
           }),
         ],
         version: published.label,

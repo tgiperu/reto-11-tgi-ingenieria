@@ -1,3 +1,4 @@
+import { user } from "@reto-11-tgi-ingenieria/db/schema/auth";
 import {
   brigade,
   sector,
@@ -24,7 +25,7 @@ import {
   tidy,
 } from "@reto-11-tgi-ingenieria/domain/names";
 import { TRPCError } from "@trpc/server";
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { adminProcedure, router, staffProcedure } from "../index";
@@ -39,6 +40,32 @@ import {
 } from "../lib/settings";
 
 const DEFAULT_K = 3;
+
+/** El jefe de brigada debe ser un usuario registrado que aún no tenga brigada. */
+async function loadFreeLeader(
+  db: Parameters<typeof writeAudit>[0],
+  userId: string,
+  brigadeId: string | null
+): Promise<{ id: string; name: string }> {
+  const [row] = await db
+    .select({ brigadeId: user.brigadeId, id: user.id, name: user.name })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+  if (!row) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Usuario no encontrado",
+    });
+  }
+  if (row.brigadeId !== null && row.brigadeId !== brigadeId) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: `${row.name} ya pertenece a la brigada ${row.brigadeId}`,
+    });
+  }
+  return { id: row.id, name: row.name };
+}
 const CARBON_CHUNK = 500;
 
 const equationsSchema = z.object({
@@ -115,12 +142,13 @@ export const catalogRouter = router({
       .input(
         z.object({
           id: z.string().trim().min(2).max(20),
-          leaderName: z.string().trim().min(2).max(120),
+          leaderUserId: z.string(),
           members: z.array(z.string().trim().min(1).max(120)).max(12),
         })
       )
       .mutation(async ({ ctx, input }) => {
         const id = input.id.toUpperCase();
+        const leader = await loadFreeLeader(ctx.db, input.leaderUserId, null);
         const [dup] = await ctx.db
           .select()
           .from(brigade)
@@ -134,7 +162,11 @@ export const catalogRouter = router({
         }
         await ctx.db
           .insert(brigade)
-          .values({ id, leaderName: input.leaderName, members: input.members });
+          .values({ id, leaderName: leader.name, members: input.members });
+        await ctx.db
+          .update(user)
+          .set({ brigadeId: id })
+          .where(eq(user.id, leader.id));
         await bumpCatalogVersion(ctx.db);
         await writeAudit(ctx.db, ctx.actor, {
           action: "brigade.create",
@@ -145,7 +177,10 @@ export const catalogRouter = router({
       }),
 
     list: staffProcedure.query(async ({ ctx }) => {
-      const rows = await ctx.db.select().from(brigade).orderBy(brigade.id);
+      const rows = await ctx.db
+        .select()
+        .from(brigade)
+        .orderBy(desc(brigade.createdAt), brigade.id);
       const plots = await ctx.db
         .select({
           brigadeId: plot.brigadeId,
@@ -177,7 +212,7 @@ export const catalogRouter = router({
         z.object({
           devices: z.number().int().min(0).max(50).optional(),
           id: z.string(),
-          leaderName: z.string().trim().min(2).max(120).optional(),
+          leaderUserId: z.string().optional(),
           members: z
             .array(z.string().trim().min(1).max(120))
             .max(12)
@@ -185,8 +220,31 @@ export const catalogRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const { id, ...patch } = input;
-        await ctx.db.update(brigade).set(patch).where(eq(brigade.id, id));
+        const { id, leaderUserId, ...patch } = input;
+        const set: Partial<typeof brigade.$inferInsert> = { ...patch };
+        if (leaderUserId) {
+          const [current] = await ctx.db
+            .select()
+            .from(brigade)
+            .where(eq(brigade.id, id))
+            .limit(1);
+          const leader = await loadFreeLeader(ctx.db, leaderUserId, id);
+          if (current && current.leaderName !== leader.name) {
+            // El jefe anterior queda sin brigada y vuelve a estar disponible.
+            await ctx.db
+              .update(user)
+              .set({ brigadeId: null })
+              .where(
+                and(eq(user.brigadeId, id), eq(user.name, current.leaderName))
+              );
+          }
+          await ctx.db
+            .update(user)
+            .set({ brigadeId: id })
+            .where(eq(user.id, leader.id));
+          set.leaderName = leader.name;
+        }
+        await ctx.db.update(brigade).set(set).where(eq(brigade.id, id));
         await bumpCatalogVersion(ctx.db);
         await writeAudit(ctx.db, ctx.actor, {
           action: "brigade.update",
@@ -245,7 +303,10 @@ export const catalogRouter = router({
       }),
 
     list: staffProcedure.query(async ({ ctx }) => {
-      const rows = await ctx.db.select().from(sector).orderBy(sector.name);
+      const rows = await ctx.db
+        .select()
+        .from(sector)
+        .orderBy(desc(sector.createdAt), desc(sector.id));
       const plots = await ctx.db
         .select({
           n: sql<number>`count(*)`.mapWith(Number),
@@ -390,6 +451,7 @@ export const catalogRouter = router({
           .from(measurement)
           .groupBy(measurement.speciesId);
         const count = new Map(counts.map((c) => [c.id, c.n]));
+        const created = new Map(rows.map((s) => [s.id, s.createdAt.getTime()]));
         const q = normalizeKey(input?.search ?? "");
         return rows
           .filter(
@@ -411,7 +473,12 @@ export const catalogRouter = router({
             name: s.name,
             scientificName: s.scientificName,
           }))
-          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+          .sort(
+            (a, b) =>
+              (created.get(b.id) ?? 0) - (created.get(a.id) ?? 0) ||
+              b.count - a.count ||
+              a.name.localeCompare(b.name)
+          );
       }),
 
     merge: adminProcedure

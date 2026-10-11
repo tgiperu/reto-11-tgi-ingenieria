@@ -67,7 +67,10 @@ export async function saveEquations(
 
 /** Reglas en edición (borrador): lo que ve el administrador antes de publicar. */
 export async function getDraftRules(db: Database): Promise<RuleSetting[]> {
-  const rows = await db.select().from(ruleSetting);
+  const rows = await db
+    .select()
+    .from(ruleSetting)
+    .orderBy(desc(ruleSetting.updatedAt));
   const byKey = new Map(rows.map((r) => [r.key, r]));
   const builtIn = defaultRuleSettings().map((base) => {
     const row = byKey.get(base.key);
@@ -83,7 +86,7 @@ export async function getDraftRules(db: Database): Promise<RuleSetting[]> {
         param: r.param,
       })
     );
-  return [...builtIn, ...custom];
+  return [...custom, ...builtIn];
 }
 
 export function ruleVersionLabel(id: number): string {

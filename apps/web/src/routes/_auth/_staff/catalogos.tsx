@@ -366,7 +366,6 @@ function CatalogsPage() {
   const [eqOpen, setEqOpen] = useState(false);
   const [eqIndex, setEqIndex] = useState<number | null>(null);
   const categories = useQuery(trpc.catalog.categories.queryOptions());
-  const version = useQuery(trpc.catalog.version.queryOptions());
   const current = TABS.find((t) => t.id === tab);
   const tabs: TabDef<TabId>[] = TABS.map((t) => ({ id: t.id, label: t.label }));
 
@@ -404,8 +403,8 @@ function CatalogsPage() {
         </Notice>
       )}
       <Tabs label="Catálogo" onChange={setTab} tabs={tabs} value={tab} />
-      <div className="flex flex-wrap items-start gap-4">
-        <Panel className="min-w-0 flex-[999_1_560px] overflow-hidden">
+      <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <Panel className="min-w-0 overflow-hidden">
           {tab === "sp" ? (
             <SpeciesTab isAdmin={isAdmin} onEdit={setSpecies} />
           ) : null}
@@ -415,33 +414,44 @@ function CatalogsPage() {
           {tab === "se" ? <SectorsTab isAdmin={isAdmin} /> : null}
           {tab === "ca" ? <CategoriesTab /> : null}
         </Panel>
-        <Panel className="flex min-w-0 flex-[1_1_340px] flex-col gap-3 p-[18px]">
-          <h2 className="font-semibold text-[15px]">Ecuaciones de carbono</h2>
-          <span className="text-ink-3 text-xs">
-            D = diámetro equivalente (cm), Dc = diámetro de copa promedio (m),
-            FE = 1 / área de subparcela (ha).
-          </span>
-          {categories.data?.formulas.map((f, i) => (
-            <button
-              aria-pressed={eqIndex === i}
-              className={`flex cursor-pointer flex-col items-start gap-1 rounded-md border-2 px-3 py-2.5 text-left ${eqIndex === i ? "border-primary bg-sel" : "border-transparent bg-paper hover:bg-sunken"}`}
-              key={f.name}
-              onClick={() => setEqIndex(eqIndex === i ? null : i)}
-              type="button"
-            >
-              <strong className="text-[13px]">{f.name}</strong>
-              <code className="whitespace-pre-line font-mono text-xs">
-                {f.text}
-              </code>
-            </button>
-          ))}
-          <Button
-            disabled={!(isAdmin && categories.data) || eqIndex === null}
-            onClick={() => setEqOpen(true)}
-          >
-            Editar
-          </Button>
-        </Panel>
+        <div className="relative min-h-[380px] lg:min-h-0">
+          <Panel className="flex flex-col lg:absolute lg:inset-0">
+            <div className="flex flex-none flex-col gap-1 border-line border-b p-[18px] pb-3">
+              <h2 className="font-semibold text-[15px]">
+                Ecuaciones de carbono
+              </h2>
+              <span className="text-ink-3 text-xs">
+                D = diámetro equivalente (cm), Dc = diámetro de copa promedio
+                (m), FE = 1 / área de subparcela (ha).
+              </span>
+            </div>
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-[18px] py-3">
+              {categories.data?.formulas.map((f, i) => (
+                <button
+                  aria-pressed={eqIndex === i}
+                  className={`flex flex-none cursor-pointer flex-col items-start gap-1 rounded-md border-2 px-3 py-2.5 text-left ${eqIndex === i ? "border-primary bg-sel" : "border-transparent bg-paper hover:bg-sunken"}`}
+                  key={f.name}
+                  onClick={() => setEqIndex(eqIndex === i ? null : i)}
+                  type="button"
+                >
+                  <strong className="text-[13px]">{f.name}</strong>
+                  <code className="whitespace-pre-line font-mono text-xs">
+                    {f.text}
+                  </code>
+                </button>
+              ))}
+            </div>
+            <div className="flex-none border-line border-t p-3">
+              <Button
+                className="w-full"
+                disabled={!(isAdmin && categories.data) || eqIndex === null}
+                onClick={() => setEqOpen(true)}
+              >
+                Editar
+              </Button>
+            </div>
+          </Panel>
+        </div>
       </div>
       <SpeciesModal
         key={`sp-${species?.id ?? "new"}-${species === null}`}

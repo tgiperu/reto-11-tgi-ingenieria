@@ -23,6 +23,13 @@ const timeShort = new Intl.DateTimeFormat(LOCALE, {
   minute: "2-digit",
   timeZone: TZ,
 });
+const SPACES = /\s/g;
+const time12 = new Intl.DateTimeFormat("en-US", {
+  hour: "2-digit",
+  hour12: true,
+  minute: "2-digit",
+  timeZone: TZ,
+});
 const dateOnly = new Intl.DateTimeFormat(LOCALE, {
   day: "2-digit",
   month: "2-digit",
@@ -42,6 +49,14 @@ export function fmtTimeSeconds(
 
 export function fmtTime(value: string | Date | null | undefined): string {
   return value ? timeShort.format(new Date(value)) : "—";
+}
+
+/** Hora en formato de 12 horas: 02:09 am / 02:09 pm. */
+export function fmtTimeAmPm(value: string | Date | null | undefined): string {
+  if (!value) {
+    return "—";
+  }
+  return time12.format(new Date(value)).toLowerCase().replace(SPACES, " ");
 }
 
 export function fmtDate(value: string | Date | null | undefined): string {

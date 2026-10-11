@@ -4,7 +4,6 @@ import { useIsFetching, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Link,
   Outlet,
-  useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
 import {
@@ -19,9 +18,9 @@ import {
 } from "lucide-react";
 import { type ComponentType, useState } from "react";
 
+import { fmtTimeAmPm } from "@/lib/format";
 import { PageMask } from "@/components/shell/page-mask";
 import { SignOutDialog } from "@/components/shell/sign-out-dialog";
-import { fmtTime } from "@/lib/format";
 import { useSyncState } from "@/lib/offline/sync";
 import type { CachedSession } from "@/lib/session";
 import { trpc } from "@/utils/trpc";
@@ -109,7 +108,6 @@ function sectionOf(pathname: string): NavItem {
 }
 
 export function StaffShell({ session }: { session: CachedSession }) {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { online } = useSyncState();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -203,12 +201,14 @@ export function StaffShell({ session }: { session: CachedSession }) {
                 online ? "bg-ok" : "bg-warn"
               )}
             />
-            {online ? "En línea" : "Sin conexión"} · datos{" "}
-            <span className="font-mono">{fmtTime(badge.data?.lastSync)}</span>
+            {online ? "En línea" : "Sin conexión"} ·{" "}
+            <span className="font-mono">
+              {fmtTimeAmPm(badge.data?.lastSync)}
+            </span>
           </span>
           <button
             aria-label="Sincronizar ahora"
-            className="flex size-11 cursor-pointer items-center justify-center rounded-md border border-edge bg-white text-ink hover:bg-sunken"
+            className="flex size-11 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-ink-2 hover:bg-sunken hover:text-ink"
             onClick={() => queryClient.invalidateQueries()}
             title="Sincronizar ahora"
             type="button"
