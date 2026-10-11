@@ -3,7 +3,7 @@ import {
   type HealthKey,
 } from "@reto-11-tgi-ingenieria/domain/health";
 import { sanitizePositiveDecimal } from "@reto-11-tgi-ingenieria/domain/measure";
-import type { RuleAlert } from "@reto-11-tgi-ingenieria/domain/rules";
+import type { RuleAlert, Severity } from "@reto-11-tgi-ingenieria/domain/rules";
 import { cn } from "@reto-11-tgi-ingenieria/ui/lib/utils";
 import { Camera, CircleX, Images, Trash2, TriangleAlert } from "lucide-react";
 import { type ReactNode, useEffect, useId, useState } from "react";
@@ -19,20 +19,36 @@ import {
 const INPUT =
   "min-h-12 w-full rounded-md border border-field bg-white px-3 font-mono text-base text-ink focus-visible:border-primary";
 
+const SECTION_BORDER: Record<Severity, string> = {
+  critical: "border-2 border-crit p-[11px]",
+  warning: "border-2 border-warn p-[11px]",
+};
+
 export function Section({
   title,
   help,
+  reference,
+  alert,
   aside,
   children,
 }: {
   title: string;
   help: string;
+  /** Límites y criterios que aplican a este campo (de dónde sale una alerta). */
+  reference?: readonly string[];
+  /** Gravedad de la peor alerta que cae en este campo. */
+  alert?: Severity | null;
   aside?: ReactNode;
   children: ReactNode;
 }) {
   const { noteId, open, toggle } = useHelp();
   return (
-    <section className="flex flex-col gap-2 rounded-lg border border-line bg-white p-3">
+    <section
+      className={cn(
+        "flex flex-col gap-2 rounded-lg bg-white p-3",
+        alert ? SECTION_BORDER[alert] : "border border-line"
+      )}
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-0.5">
           <strong className="text-sm">{title}</strong>
@@ -48,6 +64,13 @@ export function Section({
       <HelpNote id={noteId} open={open}>
         {help}
       </HelpNote>
+      {reference && reference.length > 0 ? (
+        <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-ink-2 text-xs">
+          {reference.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      ) : null}
       {children}
     </section>
   );
@@ -110,14 +133,19 @@ export function StemsSection({
   code,
   onChange,
   eq,
+  alert,
+  reference,
 }: {
   stems: string[];
   code: string;
   onChange: (stems: string[]) => void;
   eq: string;
+  alert?: Severity | null;
+  reference?: readonly string[];
 }) {
   return (
     <Section
+      alert={alert}
       aside={
         <Button
           className="rounded-md border-primary text-ink"
@@ -128,6 +156,7 @@ export function StemsSection({
         </Button>
       }
       help="Diámetro del tronco medido con cinta diamétrica a 1.30 m del suelo, en cm. Si el árbol tiene varios ejes (troncos), mide cada uno y toca «+ Eje»."
+      reference={reference}
       title="DAP por eje (cm) · a 1.30 m"
     >
       {stems.map((value, i) => {
@@ -177,16 +206,22 @@ export function CrownSection({
   onMin,
   onMax,
   avg,
+  alert,
+  reference,
 }: {
   min: string;
   max: string;
   onMin: (v: string) => void;
   onMax: (v: string) => void;
   avg: string;
+  alert?: Severity | null;
+  reference?: readonly string[];
 }) {
   return (
     <Section
+      alert={alert}
       help="Ancho de la copa visto desde arriba, en metros. Mide el diámetro menor y el mayor; el promedio se calcula solo."
+      reference={reference}
       title="Diámetro de copa (m)"
     >
       <div className="grid grid-cols-2 gap-2">
@@ -214,16 +249,22 @@ export function DacSection({
   onA,
   onB,
   avg,
+  alert,
+  reference,
 }: {
   a: string;
   b: string;
   onA: (v: string) => void;
   onB: (v: string) => void;
   avg: string;
+  alert?: Severity | null;
+  reference?: readonly string[];
 }) {
   return (
     <Section
+      alert={alert}
       help="Diámetro a la altura del cuello: grosor del tallo a 5 cm del suelo, en cm. Toma dos lecturas; se promedian solas."
+      reference={reference}
       title="DAC (cm) · a 5 cm del suelo"
     >
       <div className="grid grid-cols-2 gap-2">
@@ -260,6 +301,8 @@ export function HeightSection({
   onP1,
   computed,
   error,
+  alert,
+  reference,
 }: {
   mode: HeightMode;
   onMode: (m: HeightMode) => void;
@@ -273,9 +316,12 @@ export function HeightSection({
   onP1: (v: string) => void;
   computed: string;
   error?: string | null;
+  alert?: Severity | null;
+  reference?: readonly string[];
 }) {
   return (
     <Section
+      alert={alert}
       aside={
         <fieldset
           aria-label="Forma de medir"
@@ -305,6 +351,7 @@ export function HeightSection({
         </fieldset>
       }
       help="Distancia vertical del suelo a la punta más alta del árbol, en metros. Puedes escribirla directa o calcularla con clinómetro."
+      reference={reference}
       title="Altura total (m)"
     >
       {mode === "direct" ? (

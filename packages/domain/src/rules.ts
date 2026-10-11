@@ -604,6 +604,36 @@ export function evaluateMeasurement(
   return alerts;
 }
 
+export interface MeasurementLimits {
+  dapMax: number | null;
+  heightMax: number | null;
+  heightMin: number | null;
+}
+
+/** Los límites con los que se comparan DAP y altura, para mostrarlos junto al campo. */
+export function measurementLimits(
+  category: CategoryKey,
+  species: Pick<EvalSpecies, "dapMax" | "hMax"> | null,
+  settings: readonly RuleSetting[] = defaultRuleSettings()
+): MeasurementLimits {
+  const rule = lookupFor(settings);
+  const dapMax =
+    rule("dap").active && isTreeCategory(category)
+      ? (species?.dapMax ?? null)
+      : null;
+  const heightRule = rule("alt");
+  let heightMax: number | null = null;
+  if (heightRule.active && category !== "br") {
+    heightMax = species?.hMax ?? (category === "fu" ? null : heightRule.param);
+  }
+  return {
+    dapMax,
+    heightMax,
+    heightMin:
+      heightRule.active && category === "la" ? MIN_LATIZAL_HEIGHT_M : null,
+  };
+}
+
 export const COORD_CRITICAL_M = 1000;
 
 export interface PlotCoordCheck {
