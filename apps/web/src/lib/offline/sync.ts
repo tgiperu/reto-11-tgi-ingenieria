@@ -1,4 +1,7 @@
-import type { PushRecord } from "@reto-11-tgi-ingenieria/domain/sync";
+import {
+  type PushRecord,
+  pushRecordSchema,
+} from "@reto-11-tgi-ingenieria/domain/sync";
 import { useSyncExternalStore } from "react";
 
 import { trpcClient } from "@/utils/trpc";
@@ -171,11 +174,60 @@ export interface PushSummary {
   sent: number;
 }
 
+const FIELD_LABELS: Record<string, string> = {
+  category: "La categoría",
+  code: "El código",
+  crownMax: "El diámetro de copa",
+  crownMin: "El diámetro de copa",
+  dac1: "El DAC",
+  dac2: "El DAC",
+  height: "La altura",
+  lat: "La ubicación",
+  lon: "La ubicación",
+  notes: "Las observaciones",
+  photo: "La foto",
+  stems: "El DAP",
+};
+
+/** Explica en español por qué el servidor no aceptaría el registro. */
+function describeInvalid(issue: {
+  code: string;
+  maximum?: unknown;
+  path: PropertyKey[];
+}): string {
+  const key = String(issue.path[0] ?? "");
+  const label = FIELD_LABELS[key] ?? `El campo «${key}»`;
+  if (issue.code === "too_big" && issue.maximum !== undefined) {
+    return `${label} supera el máximo permitido (${String(issue.maximum)}). Edita el registro y corrígelo.`;
+  }
+  return `${label} no es válido. Edita el registro y corrígelo.`;
+}
+
 async function pushBatch(batch: readonly LocalRecord[]): Promise<PushSummary> {
-  const records = await Promise.all(batch.map((r) => toPayload(r)));
-  const { results } = await trpcClient.sync.push.mutate({ records });
   const summary: PushSummary = { rejected: 0, sent: 0 };
+  const records: PushRecord[] = [];
+  const invalid = new Map<string, string>();
+  for (const r of batch) {
+    // biome-ignore lint/performance/noAwaitInLoops: la foto se convierte a base64 de a una para no saturar la memoria
+    const payload = await toPayload(r);
+    const check = pushRecordSchema.safeParse(payload);
+    if (check.success) {
+      records.push(payload);
+    } else {
+      // Un registro inválido no debe frenar el envío de los demás.
+      invalid.set(r.clientId, describeInvalid(check.error.issues[0]));
+    }
+  }
+  const results =
+    records.length > 0
+      ? (await trpcClient.sync.push.mutate({ records })).results
+      : [];
   await campoDb.transaction("rw", campoDb.records, async () => {
+    for (const [clientId, message] of invalid) {
+      summary.rejected += 1;
+      // biome-ignore lint/performance/noAwaitInLoops: lotes secuenciales: el orden importa y evita saturar la base o la señal
+      await campoDb.records.update(clientId, { error: message, sent: 2 });
+    }
     for (const result of results) {
       if (result.status === "rejected") {
         summary.rejected += 1;
@@ -195,6 +247,14 @@ async function pushBatch(batch: readonly LocalRecord[]): Promise<PushSummary> {
     }
   });
   return summary;
+}
+
+function syncErrorMessage(error: unknown): string {
+  const text = error instanceof Error ? error.message : "";
+  // Los errores de validación llegan como JSON: no se le muestran así a la persona.
+  return text === "" || text.startsWith("[") || text.startsWith("{")
+    ? "No se pudo sincronizar"
+    : text;
 }
 
 /** Envía todo lo pendiente por lotes y vuelve a descargar los catálogos. */
@@ -224,8 +284,7 @@ export async function syncNow(): Promise<PushSummary> {
     return total;
   } catch (error) {
     setState({
-      message:
-        error instanceof Error ? error.message : "No se pudo sincronizar",
+      message: syncErrorMessage(error),
       phase: "error",
     });
     throw error;

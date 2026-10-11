@@ -363,6 +363,21 @@ function makeAlert(
   return { blocking: blocks(rule), rule, severity, text, title };
 }
 
+function nnMissingText(
+  photosNeeded: number,
+  photos: number,
+  hasComment: boolean
+): string {
+  const missing: string[] = [];
+  if (photos < photosNeeded) {
+    missing.push("una foto");
+  }
+  if (!hasComment) {
+    missing.push("un comentario en Observaciones");
+  }
+  return `Para guardarla falta agregar ${missing.join(" y ")} que ayude a identificarla.`;
+}
+
 function cm(value: number): string {
   return `${value.toFixed(2)} cm`;
 }
@@ -556,7 +571,7 @@ export function evaluateMeasurement(
           "nn",
           "warning",
           "Especie sin identificar (NN)",
-          "Agrega al menos una foto y un comentario que ayude a identificarla."
+          nnMissingText(needed, input.photoCount, hasComment)
         )
       );
     }
@@ -602,6 +617,36 @@ export function evaluateMeasurement(
   }
 
   return alerts;
+}
+
+export interface MeasurementLimits {
+  dapMax: number | null;
+  heightMax: number | null;
+  heightMin: number | null;
+}
+
+/** Los límites con los que se comparan DAP y altura, para mostrarlos junto al campo. */
+export function measurementLimits(
+  category: CategoryKey,
+  species: Pick<EvalSpecies, "dapMax" | "hMax"> | null,
+  settings: readonly RuleSetting[] = defaultRuleSettings()
+): MeasurementLimits {
+  const rule = lookupFor(settings);
+  const dapMax =
+    rule("dap").active && isTreeCategory(category)
+      ? (species?.dapMax ?? null)
+      : null;
+  const heightRule = rule("alt");
+  let heightMax: number | null = null;
+  if (heightRule.active && category !== "br") {
+    heightMax = species?.hMax ?? (category === "fu" ? null : heightRule.param);
+  }
+  return {
+    dapMax,
+    heightMax,
+    heightMin:
+      heightRule.active && category === "la" ? MIN_LATIZAL_HEIGHT_M : null,
+  };
 }
 
 export const COORD_CRITICAL_M = 1000;

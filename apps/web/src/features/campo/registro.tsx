@@ -23,6 +23,9 @@ import {
   defaultRuleSettings,
   evaluateMeasurement,
   hasBlocking,
+  measurementLimits,
+  type RuleAlert,
+  type Severity,
 } from "@reto-11-tgi-ingenieria/domain/rules";
 import { cn } from "@reto-11-tgi-ingenieria/ui/lib/utils";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -58,6 +61,47 @@ import { StatusBar } from "./status-bar";
 
 const NEAREST_HINT = "Más cercana por GPS · cambia si estás en otra parcela";
 
+type AlertZone = "code" | "plot" | "species" | "size" | "height" | "other";
+
+/** Dónde se ve cada alerta: junto al campo que la provoca. */
+const ALERT_ZONES: Partial<Record<string, AlertZone>> = {
+  alt: "height",
+  cat: "size",
+  dap: "size",
+  dap_prev: "size",
+  dup: "code",
+  gps: "plot",
+  neg: "size",
+  nn: "species",
+  sp_prev: "species",
+};
+
+function groupAlerts(
+  alerts: readonly RuleAlert[]
+): Record<AlertZone, RuleAlert[]> {
+  const zones: Record<AlertZone, RuleAlert[]> = {
+    code: [],
+    height: [],
+    other: [],
+    plot: [],
+    size: [],
+    species: [],
+  };
+  for (const a of alerts) {
+    zones[ALERT_ZONES[a.rule] ?? "other"].push(a);
+  }
+  return zones;
+}
+
+function worst(alerts: readonly RuleAlert[]): Severity | null {
+  if (alerts.length === 0) {
+    return null;
+  }
+  return alerts.some((a) => a.severity === "critical" || a.blocking)
+    ? "critical"
+    : "warning";
+}
+
 function codeBorderClass(duplicate: boolean, isRemeasure: boolean): string {
   if (duplicate) {
     return "border-2 border-crit-fg";
@@ -79,15 +123,6 @@ function codeHint(
   return isRemeasure
     ? "Código existente: se registrará como remedición."
     : "Código nuevo: se creará un individuo nuevo al sincronizar.";
-}
-
-function speciesHint(sp: { dapMax: number | null } | null): string {
-  if (!sp) {
-    return "";
-  }
-  return sp.dapMax
-    ? `Rango esperado de DAP: hasta ${sp.dapMax} cm`
-    : "Sin rango histórico: no se valida el DAP";
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: muchas reglas de negocio o ramas de presentación que no ganan claridad al dividirse
@@ -338,7 +373,10 @@ export function RegistroForm({ editId }: { editId?: string }) {
     clino.distance !== null && clino.pctBase !== null && clino.pctTop !== null
       ? clinometerHeight(clino.distance, clino.pctBase, clino.pctTop)
       : null;
-  const height = hMode === "direct" ? parseDecimal(hDirect) : clinoHeight;
+  let height: number | null = null;
+  if (category !== "br") {
+    height = hMode === "direct" ? parseDecimal(hDirect) : clinoHeight;
+  }
   const heightIssue = category === "br" ? null : heightError(height);
   const gpsDistance =
     fix && plot && plot.lat !== null && plot.lon !== null
@@ -397,6 +435,29 @@ export function RegistroForm({ editId }: { editId?: string }) {
   );
   const blocked = hasBlocking(alerts);
   const hasAlerts = alerts.length > 0;
+  const zones = groupAlerts(alerts);
+  const limits = measurementLimits(
+    category,
+    sp,
+    bundle?.rules ?? defaultRuleSettings()
+  );
+  const cat = CATEGORIES[category];
+  const sizeReference = [
+    `${cat.name} · ${cat.criterion}`,
+    ...(limits.dapMax === null || !sp
+      ? []
+      : [`${sp.name}: DAP máximo esperado ${limits.dapMax} cm`]),
+  ];
+  const heightReference = [
+    ...(limits.heightMax === null
+      ? ["Sin altura máxima para esta categoría"]
+      : [
+          `Máximo esperado: ${limits.heightMax} m${sp && sp.hMax !== null ? ` (${sp.name})` : ""}`,
+        ]),
+    ...(limits.heightMin === null
+      ? []
+      : [`Mínimo de un ${cat.name.toLowerCase()}: ${limits.heightMin} m`]),
+  ];
 
   function missingField(): string | null {
     if (plotNumber === null || plot?.closed) {
@@ -527,7 +588,9 @@ export function RegistroForm({ editId }: { editId?: string }) {
       return;
     }
     if (blocked) {
-      toast.warning("Corrige las alertas en rojo antes de guardar");
+      toast.warning(
+        `Corrige antes de guardar: ${alerts.find((a) => a.blocking)?.title ?? "alertas en rojo"}`
+      );
       return;
     }
     if (hasAlerts) {
@@ -535,6 +598,40 @@ export function RegistroForm({ editId }: { editId?: string }) {
       return;
     }
     await doSave();
+  }
+
+  /** Al cambiar de categoría se borran los campos que dejan de mostrarse. */
+  function onCategory(next: CategoryKey) {
+    setCategory(next);
+    if (!isTreeCategory(next)) {
+      setStems([""]);
+    }
+    if (next !== "ar") {
+      setCrownMin("");
+      setCrownMax("");
+    }
+    if (next === "br") {
+      setHMode("direct");
+      setHDirect("");
+      setDist("");
+      setP0("");
+      setP1("");
+    } else {
+      setDac1("");
+      setDac2("");
+    }
+  }
+
+  /** Al cambiar la forma de medir la altura se borra la que queda oculta. */
+  function onHeightMode(next: HeightMode) {
+    setHMode(next);
+    if (next === "direct") {
+      setDist("");
+      setP0("");
+      setP1("");
+    } else {
+      setHDirect("");
+    }
   }
 
   async function onPhoto(file: Blob | null) {
@@ -624,6 +721,8 @@ export function RegistroForm({ editId }: { editId?: string }) {
           </span>
         </div>
 
+        <AlertList alerts={zones.code} />
+
         {isRemeasure && existing ? (
           <div
             className="flex items-start gap-2.5 rounded-lg border border-info/30 bg-info-bg p-3 text-[13px] text-info-fg"
@@ -674,13 +773,13 @@ export function RegistroForm({ editId }: { editId?: string }) {
           placeholder="Buscar N° o sector"
           selected={plotNumber}
         />
+        <AlertList alerts={zones.plot} />
         <Combobox
           headline={(n) => plural(n, "categoría", "categorías")}
           help="Clase del individuo según su tamaño: latizal alto, fustal, arbusto grande o brinzal. Define el radio de la subparcela."
-          hint={`${CATEGORIES[category].criterion} · subparcela r ${CATEGORIES[category].radiusM} m`}
           items={categoryItems}
           label="Categoría"
-          onPick={setCategory}
+          onPick={onCategory}
           placeholder="Buscar categoría"
           selected={category}
         />
@@ -691,7 +790,6 @@ export function RegistroForm({ editId }: { editId?: string }) {
             `${all ? "Más registradas primero · " : ""}${plural(n, "resultado", "resultados")}`
           }
           help="Nombre común de la especie. Si no la reconoces, regístrala como NN y toma una foto."
-          hint={speciesHint(sp)}
           items={speciesItems}
           label="Especie (nombre común)"
           onEmpty={nnSpecies ? () => setSpeciesId(nnSpecies.id) : undefined}
@@ -699,33 +797,45 @@ export function RegistroForm({ editId }: { editId?: string }) {
           placeholder="Buscar especie"
           selected={speciesId}
         />
+        <AlertList alerts={zones.species} />
 
         {isTreeCategory(category) ? (
-          <StemsSection code={code} eq={eq} onChange={setStems} stems={stems} />
+          <StemsSection
+            alert={worst(zones.size)}
+            eq={eq}
+            onChange={setStems}
+            reference={sizeReference}
+            stems={stems}
+          />
         ) : null}
         {category === "ar" ? (
           <CrownSection
+            alert={worst(zones.size)}
             avg={crownAvg}
             max={crownMax}
             min={crownMin}
             onMax={setCrownMax}
             onMin={setCrownMin}
+            reference={sizeReference}
           />
         ) : null}
         {category === "br" ? (
           <DacSection
             a={dac1}
+            alert={worst(zones.size)}
             avg={dacAvg}
             b={dac2}
             onA={setDac1}
             onB={setDac2}
+            reference={sizeReference}
           />
         ) : null}
 
-        <AlertList alerts={alerts} />
+        <AlertList alerts={zones.size} />
 
         {category === "br" ? null : (
           <HeightSection
+            alert={worst(zones.height)}
             computed={clinoHeight === null ? "—" : clinoHeight.toFixed(2)}
             direct={hDirect}
             dist={dist}
@@ -733,13 +843,17 @@ export function RegistroForm({ editId }: { editId?: string }) {
             mode={hMode}
             onDirect={setHDirect}
             onDist={setDist}
-            onMode={setHMode}
+            onMode={onHeightMode}
             onP0={setP0}
             onP1={setP1}
             p0={p0}
             p1={p1}
+            reference={heightReference}
           />
         )}
+
+        <AlertList alerts={zones.height} />
+        <AlertList alerts={zones.other} />
 
         <HealthSection
           onChange={setHealth}
