@@ -2,6 +2,7 @@ import {
   HEALTH_LIST,
   type HealthKey,
 } from "@reto-11-tgi-ingenieria/domain/health";
+import { sanitizePositiveDecimal } from "@reto-11-tgi-ingenieria/domain/measure";
 import type { RuleAlert } from "@reto-11-tgi-ingenieria/domain/rules";
 import { cn } from "@reto-11-tgi-ingenieria/ui/lib/utils";
 import { Camera, CircleX, Images, Trash2, TriangleAlert } from "lucide-react";
@@ -37,11 +38,13 @@ export function NumField({
   value,
   onChange,
   large,
+  invalid,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   large?: boolean;
+  invalid?: boolean;
 }) {
   const id = useId();
   return (
@@ -50,7 +53,12 @@ export function NumField({
         {label}
       </label>
       <input
-        className={cn(INPUT, large && "text-xl")}
+        aria-invalid={invalid ? true : undefined}
+        className={cn(
+          INPUT,
+          large && "text-xl",
+          invalid && "border-2 border-crit-fg"
+        )}
         id={id}
         inputMode="decimal"
         onChange={(e) => onChange(e.target.value)}
@@ -197,6 +205,7 @@ export function HeightSection({
   onP0,
   onP1,
   computed,
+  error,
 }: {
   mode: HeightMode;
   onMode: (m: HeightMode) => void;
@@ -209,6 +218,7 @@ export function HeightSection({
   onP0: (v: string) => void;
   onP1: (v: string) => void;
   computed: string;
+  error?: string | null;
 }) {
   return (
     <Section
@@ -244,21 +254,31 @@ export function HeightSection({
     >
       {mode === "direct" ? (
         <NumField
+          invalid={Boolean(error)}
           label="Altura directa en metros"
           large
-          onChange={onDirect}
+          onChange={(v) => onDirect(sanitizePositiveDecimal(v))}
           value={direct}
         />
       ) : (
         <>
           <div className="grid grid-cols-3 gap-2">
-            <NumField label="Distancia (m)" onChange={onDist} value={dist} />
+            <NumField
+              label="Distancia (m)"
+              onChange={(v) => onDist(sanitizePositiveDecimal(v))}
+              value={dist}
+            />
             <NumField label="% base" onChange={onP0} value={p0} />
             <NumField label="% copa" onChange={onP1} value={p1} />
           </div>
           <Readout label="Calculada" value={`${computed} m`} />
         </>
       )}
+      {error ? (
+        <p className="m-0 font-semibold text-crit-fg text-sm" role="alert">
+          {error}
+        </p>
+      ) : null}
     </Section>
   );
 }

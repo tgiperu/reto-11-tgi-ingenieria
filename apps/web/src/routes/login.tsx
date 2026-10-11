@@ -1,9 +1,11 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, WifiOff } from "lucide-react";
 import { type FormEvent, useId, useState } from "react";
 
 import { Button } from "@/components/app/button";
+import { APP_VERSION } from "@/lib/app-version";
 import { authClient } from "@/lib/auth-client";
+import { useSyncState } from "@/lib/offline/sync";
 import { loadSession } from "@/lib/session";
 
 export const Route = createFileRoute("/login")({
@@ -31,6 +33,7 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const { online } = useSyncState();
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -87,7 +90,7 @@ function LoginPage() {
         </p>
       </section>
 
-      <section className="paso relative flex min-h-svh flex-col justify-center gap-8 bg-sheet px-6 py-10 sm:px-12 lg:bg-sheet/80 lg:px-10 lg:backdrop-blur-2xl lg:backdrop-saturate-150">
+      <section className="paso relative flex min-h-svh flex-col justify-between gap-8 bg-sheet px-6 py-10 sm:px-12 lg:bg-sheet/80 lg:px-10 lg:backdrop-blur-2xl lg:backdrop-saturate-150">
         <div className="mx-auto my-auto flex w-full max-w-sm flex-col gap-7">
           <header className="flex flex-col gap-6">
             <img
@@ -106,6 +109,19 @@ function LoginPage() {
               </p>
             </div>
           </header>
+
+          {online ? null : (
+            <div
+              className="flex items-start gap-2.5 rounded-lg border border-warn-edge bg-warn-bg px-3.5 py-3 text-sm text-warn-fg"
+              role="status"
+            >
+              <WifiOff aria-hidden="true" className="mt-0.5 flex-none" size={18} />
+              <span>
+                <strong>Sin conexión.</strong> Necesitas señal para iniciar
+                sesión.
+              </span>
+            </div>
+          )}
 
           <form
             aria-describedby={error ? errorId : undefined}
@@ -179,7 +195,12 @@ function LoginPage() {
               </p>
             ) : null}
 
-            <Button disabled={busy} size="lg" type="submit" variant="primary">
+            <Button
+              disabled={busy || !online}
+              size="lg"
+              type="submit"
+              variant="primary"
+            >
               {busy ? (
                 <>
                   <Loader2
@@ -195,6 +216,9 @@ function LoginPage() {
             </Button>
           </form>
         </div>
+        <p className="text-center text-ink-3 text-sm">
+          Versión <span className="font-mono">{APP_VERSION}</span>
+        </p>
       </section>
     </main>
   );
