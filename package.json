@@ -1,6 +1,7 @@
 {
   "name": "reto-11-tgi-ingenieria",
   "private": true,
+  "type": "module",
   "workspaces": {
     "packages": [
       "apps/*",
@@ -26,31 +27,33 @@
       "drizzle-orm": "1.0.0-rc.4"
     }
   },
-  "type": "module",
   "scripts": {
-    "dev": "vp run -r dev",
+    "auth:generate": "cd apps/server && bun run auth:generate",
     "build": "vp run -r build",
-    "check-types": "vp run -r check-types",
     "check": "ultracite check",
-    "lint": "vp lint",
-    "format": "vp fmt",
-    "staged": "vp staged",
-    "hooks:setup": "vp config",
-    "dev:native": "vp run --filter native dev",
-    "dev:web": "vp run --filter web dev",
-    "dev:server": "vp run --filter server dev",
-    "db:push": "vp run --filter @reto-11-tgi-ingenieria/db db:push",
-    "db:studio": "vp run --filter @reto-11-tgi-ingenieria/db db:studio",
+    "check-types": "vp run -r check-types",
     "db:generate": "vp run --filter @reto-11-tgi-ingenieria/db db:generate",
     "db:migrate": "vp run --filter @reto-11-tgi-ingenieria/db db:migrate",
+    "db:push": "vp run --filter @reto-11-tgi-ingenieria/db db:push",
+    "db:seed": "vp run --filter server db:seed",
+    "db:studio": "vp run --filter @reto-11-tgi-ingenieria/db db:studio",
+    "dev": "vp run -r dev",
+    "dev:server": "vp run --filter server dev",
+    "dev:web": "vp run --filter web dev",
     "docker:build": "docker compose build",
-    "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
-    "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./apps/native/ && varlock codegen --path ./packages/db/",
-    "postinstall": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./apps/native/ && varlock codegen --path ./packages/db/",
-    "auth:generate": "cd apps/server && bun run auth:generate",
-    "fix": "ultracite fix"
+    "docker:up": "docker compose up -d --build",
+    "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./packages/db/",
+    "fix": "ultracite fix",
+    "format": "vp fmt",
+    "hooks:setup": "vp config",
+    "postinstall": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./packages/db/",
+    "lint": "vp lint",
+    "staged": "vp staged"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.1"
   },
   "dependencies": {
     "zod": "catalog:"
@@ -64,9 +67,6 @@
     "ultracite": "7.11.0",
     "varlock": "catalog:",
     "vite-plus": "0.3.1"
-  },
-  "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.1"
   },
   "packageManager": "bun@1.4.3"
 }

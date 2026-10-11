@@ -7,14 +7,15 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
     "db:migrate:deploy": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio",
-    "db:migrate": "drizzle-kit migrate"
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
+    "@reto-11-tgi-ingenieria/domain": "workspace:*",
     "drizzle-orm": "catalog:",
     "zod": "catalog:"
   },

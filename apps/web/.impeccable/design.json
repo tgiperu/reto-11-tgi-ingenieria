@@ -1,0 +1,474 @@
+{
+  "components": [
+    {
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:6px;font:600 14px 'Public Sans Variable',system-ui,sans-serif;cursor:pointer;white-space:nowrap}.ds-btn:focus-visible{outline:3px solid #1b1b18;outline-offset:2px;box-shadow:0 0 0 5px #fff}.ds-btn:active{transform:translateY(1px)}.ds-btn-primary{background:#1b1b18;color:#fff;border:1px solid #1b1b18}.ds-btn-primary:hover{background:#34332d}",
+      "description": "Acción principal en tinta, a la derecha del título.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Exportar atípicos</button>",
+      "kind": "button",
+      "name": "Primary Button",
+      "refersTo": "button-primary"
+    },
+    {
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:6px;font:600 14px 'Public Sans Variable',system-ui,sans-serif;cursor:pointer;white-space:nowrap}.ds-btn:focus-visible{outline:3px solid #1b1b18;outline-offset:2px;box-shadow:0 0 0 5px #fff}.ds-btn:active{transform:translateY(1px)}.ds-btn-secondary{background:#fff;color:#1b1b18;border:1.5px solid #1b1b18}.ds-btn-secondary:hover{background:#efede5}",
+      "description": "Acción secundaria con trazo de tinta.",
+      "html": "<button class=\"ds-btn ds-btn-secondary\">Cancelar</button>",
+      "kind": "button",
+      "name": "Secondary Button",
+      "refersTo": "button-secondary"
+    },
+    {
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:6px;font:600 14px 'Public Sans Variable',system-ui,sans-serif;cursor:pointer;white-space:nowrap}.ds-btn:focus-visible{outline:3px solid #1b1b18;outline-offset:2px;box-shadow:0 0 0 5px #fff}.ds-btn:active{transform:translateY(1px)}.ds-btn-danger{background:#fff;color:#8a1c12;border:1px solid #8a1c12}.ds-btn-danger:hover{background:#fbe3de}",
+      "description": "Acción destructiva: blanco con trazo y texto de error.",
+      "html": "<button class=\"ds-btn ds-btn-danger\">Desbloquear</button>",
+      "kind": "button",
+      "name": "Danger Button",
+      "refersTo": "button-danger"
+    },
+    {
+      "css": ".ds-field-link{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:8px;background:#0e7c86;color:#fff;font:600 14px 'Public Sans Variable',system-ui,sans-serif;text-decoration:none}.ds-field-link:hover{filter:brightness(1.1)}.ds-field-link:focus-visible{outline:3px solid #1b1b18;outline-offset:2px;box-shadow:0 0 0 5px #fff}",
+      "description": "Enlace a la cara de campo en la barra superior.",
+      "html": "<a class=\"ds-field-link\" href=\"#\">Modo campo</a>",
+      "kind": "button",
+      "name": "Modo campo",
+      "refersTo": "button-field-mode"
+    },
+    {
+      "css": ".ds-field{display:flex;flex-direction:column;gap:6px}.ds-field label{font:600 12px 'Public Sans Variable',system-ui,sans-serif;color:#5e5c54}.ds-input{min-height:44px;width:100%;box-sizing:border-box;border:1px solid #bdb9aa;border-radius:8px;background:#fff;padding:0 12px;font:400 14px 'Public Sans Variable',system-ui,sans-serif;color:#1b1b18}.ds-input:focus-visible{border-color:#1b1b18;outline:3px solid #1b1b18;outline-offset:2px;box-shadow:0 0 0 5px #fff}",
+      "description": "Campo con etiqueta de 12px encima.",
+      "html": "<div class=\"ds-field\"><label for=\"ds-i\">Correo</label><input id=\"ds-i\" class=\"ds-input\" placeholder=\"nombre@organizacion.org\"></div>",
+      "kind": "input",
+      "name": "Text Field",
+      "refersTo": "input"
+    },
+    {
+      "css": ".ds-tabs{display:flex;height:56px;background:#fff;border-bottom:1px solid #dad7cc}.ds-tab{display:flex;align-items:center;gap:8px;padding:0 14px;margin-bottom:-1px;border-bottom:3px solid transparent;color:#5e5c54;font:400 14px 'Public Sans Variable',system-ui,sans-serif;text-decoration:none}.ds-tab i{width:10px;height:10px;border-radius:2px;background:var(--c)}.ds-tab:hover{color:#1b1b18}.ds-tab.ds-on{color:#1b1b18;font-weight:700;border-bottom-color:var(--c)}.ds-tab:focus-visible{outline:3px solid #1b1b18;outline-offset:2px;box-shadow:0 0 0 5px #fff}",
+      "description": "Pestañas con cuadrito de color y trazo de 3px en la activa.",
+      "html": "<nav class=\"ds-tabs\"><a class=\"ds-tab ds-on\" style=\"--c:#f2b705\" href=\"#\"><i></i>Panel</a><a class=\"ds-tab\" style=\"--c:#1d3e8f\" href=\"#\"><i></i>Mapa</a><a class=\"ds-tab\" style=\"--c:#257a4a\" href=\"#\"><i></i>Parcelas</a><a class=\"ds-tab\" style=\"--c:#d2420e\" href=\"#\"><i></i>Alertas</a></nav>",
+      "kind": "nav",
+      "name": "Section Tabs",
+      "refersTo": "navigation"
+    },
+    {
+      "css": ".ds-chip{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font:600 12px 'Public Sans Variable',system-ui,sans-serif;white-space:nowrap}.ds-ok{background:#e0efe5;color:#14522f}.ds-warn{background:#fcebd0;color:#6e3b00}.ds-info{background:#e1e7f6;color:#17316f}.ds-crit{background:#fbe3de;color:#8a1c12}",
+      "description": "Píldoras de estado con par fondo/texto.",
+      "html": "<span class=\"ds-chip ds-ok\">Bloqueada</span> <span class=\"ds-chip ds-warn\">Alerta</span> <span class=\"ds-chip ds-info\">Revisión</span> <span class=\"ds-chip ds-crit\">Desbloqueada</span>",
+      "kind": "chip",
+      "name": "Status Chips",
+      "refersTo": "chip-ok"
+    },
+    {
+      "css": ".ds-board{height:96px;background:#f2b705;color:#1b1b18;padding:16px;font:700 14px 'Public Sans Variable',system-ui,sans-serif;letter-spacing:.14em}.ds-hoja{position:relative;margin:-56px 8px 0 8px;padding:24px 16px;background:#f7f6f2;box-shadow:6px 0 0 rgb(27 27 24 / 18%);color:#1b1b18;font-family:'Public Sans Variable',system-ui,sans-serif}.ds-hoja h1{margin:0;font-size:26px;line-height:1.25;letter-spacing:-.025em}.ds-hoja p{margin:4px 0 0;font:400 15px/1.6 'Source Serif 4 Variable',Georgia,serif;color:#5e5c54}",
+      "description": "Firma del sistema: hoja lechosa con corte de 6px sobre el tablero de sección.",
+      "html": "<div class=\"ds-board\"><span>PANEL</span></div><div class=\"ds-hoja\"><h1>Atípicos por validar</h1><p>Cada fila es una medición fuera de rango.</p></div>",
+      "kind": "card",
+      "name": "Hoja sobre tablero",
+      "refersTo": "sheet"
+    },
+    {
+      "css": ".ds-status{display:flex;align-items:center;padding:6px 8px 6px 16px;min-height:44px;background:#1b1b18;color:#fff;font:500 13px 'Public Sans Variable',system-ui,sans-serif}",
+      "description": "Franja de conexión y envío; cambia de tono según estado.",
+      "html": "<div class=\"ds-status\"><span>Conectado · 3 sin enviar</span></div>",
+      "kind": "custom",
+      "name": "Barra de estado de campo",
+      "refersTo": "status-bar-ok"
+    }
+  ],
+  "extensions": {
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ],
+    "colorMeta": {
+      "primary": {
+        "canonical": "oklch(22.1% 0.006 107)",
+        "displayName": "Tinta de Manual",
+        "role": "primary",
+        "tonalRamp": [
+          "oklch(15% 0.006 107)",
+          "oklch(28% 0.006 107)",
+          "oklch(40% 0.006 107)",
+          "oklch(52% 0.006 107)",
+          "oklch(64% 0.006 107)",
+          "oklch(76% 0.006 107)",
+          "oklch(86% 0.006 107)",
+          "oklch(95% 0.006 107)"
+        ]
+      },
+      "paper": {
+        "canonical": "oklch(93.4% 0.011 90)",
+        "displayName": "Papel",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.011 90)",
+          "oklch(28% 0.011 90)",
+          "oklch(40% 0.011 90)",
+          "oklch(52% 0.011 90)",
+          "oklch(64% 0.011 90)",
+          "oklch(76% 0.011 90)",
+          "oklch(86% 0.011 90)",
+          "oklch(95% 0.011 90)"
+        ]
+      },
+      "sheet": {
+        "canonical": "oklch(97.3% 0.005 95)",
+        "displayName": "Hoja Lechosa",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.005 95)",
+          "oklch(28% 0.005 95)",
+          "oklch(40% 0.005 95)",
+          "oklch(52% 0.005 95)",
+          "oklch(64% 0.005 95)",
+          "oklch(76% 0.005 95)",
+          "oklch(86% 0.005 95)",
+          "oklch(95% 0.005 95)"
+        ]
+      },
+      "sunken": {
+        "canonical": "oklch(94.5% 0.011 95)",
+        "displayName": "Hundido",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.011 95)",
+          "oklch(28% 0.011 95)",
+          "oklch(40% 0.011 95)",
+          "oklch(52% 0.011 95)",
+          "oklch(64% 0.011 95)",
+          "oklch(76% 0.011 95)",
+          "oklch(86% 0.011 95)",
+          "oklch(95% 0.011 95)"
+        ]
+      },
+      "line": {
+        "canonical": "oklch(87.8% 0.015 94)",
+        "displayName": "Línea",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.015 94)",
+          "oklch(28% 0.015 94)",
+          "oklch(40% 0.015 94)",
+          "oklch(52% 0.015 94)",
+          "oklch(64% 0.015 94)",
+          "oklch(76% 0.015 94)",
+          "oklch(86% 0.015 94)",
+          "oklch(95% 0.015 94)"
+        ]
+      },
+      "edge": {
+        "canonical": "oklch(78.5% 0.021 95)",
+        "displayName": "Borde de Control",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.021 95)",
+          "oklch(28% 0.021 95)",
+          "oklch(40% 0.021 95)",
+          "oklch(52% 0.021 95)",
+          "oklch(64% 0.021 95)",
+          "oklch(76% 0.021 95)",
+          "oklch(86% 0.021 95)",
+          "oklch(95% 0.021 95)"
+        ]
+      },
+      "ink-3": {
+        "canonical": "oklch(47.4% 0.013 95)",
+        "displayName": "Tinta 3",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.013 95)",
+          "oklch(28% 0.013 95)",
+          "oklch(40% 0.013 95)",
+          "oklch(52% 0.013 95)",
+          "oklch(64% 0.013 95)",
+          "oklch(76% 0.013 95)",
+          "oklch(86% 0.013 95)",
+          "oklch(95% 0.013 95)"
+        ]
+      },
+      "sec-panel": {
+        "canonical": "oklch(81.1% 0.166 85)",
+        "displayName": "Amarillo Cromo",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.166 85)",
+          "oklch(28% 0.166 85)",
+          "oklch(40% 0.166 85)",
+          "oklch(52% 0.166 85)",
+          "oklch(64% 0.166 85)",
+          "oklch(76% 0.166 85)",
+          "oklch(86% 0.166 85)",
+          "oklch(95% 0.166 85)"
+        ]
+      },
+      "sec-mapa": {
+        "canonical": "oklch(39.1% 0.140 264)",
+        "displayName": "Ultramar",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.140 264)",
+          "oklch(28% 0.140 264)",
+          "oklch(40% 0.140 264)",
+          "oklch(52% 0.140 264)",
+          "oklch(64% 0.140 264)",
+          "oklch(76% 0.140 264)",
+          "oklch(86% 0.140 264)",
+          "oklch(95% 0.140 264)"
+        ]
+      },
+      "sec-parcelas": {
+        "canonical": "oklch(51.6% 0.111 154)",
+        "displayName": "Verde Pasto",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.111 154)",
+          "oklch(28% 0.111 154)",
+          "oklch(40% 0.111 154)",
+          "oklch(52% 0.111 154)",
+          "oklch(64% 0.111 154)",
+          "oklch(76% 0.111 154)",
+          "oklch(86% 0.111 154)",
+          "oklch(95% 0.111 154)"
+        ]
+      },
+      "sec-alertas": {
+        "canonical": "oklch(58.2% 0.189 37)",
+        "displayName": "Naranja Óxido",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.189 37)",
+          "oklch(28% 0.189 37)",
+          "oklch(40% 0.189 37)",
+          "oklch(52% 0.189 37)",
+          "oklch(64% 0.189 37)",
+          "oklch(76% 0.189 37)",
+          "oklch(86% 0.189 37)",
+          "oklch(95% 0.189 37)"
+        ]
+      },
+      "sec-catalogos": {
+        "canonical": "oklch(46.9% 0.152 302)",
+        "displayName": "Violeta de Catálogo",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.152 302)",
+          "oklch(28% 0.152 302)",
+          "oklch(40% 0.152 302)",
+          "oklch(52% 0.152 302)",
+          "oklch(64% 0.152 302)",
+          "oklch(76% 0.152 302)",
+          "oklch(86% 0.152 302)",
+          "oklch(95% 0.152 302)"
+        ]
+      },
+      "sec-campo": {
+        "canonical": "oklch(53.6% 0.089 205)",
+        "displayName": "Verde Azulado de Campo",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.089 205)",
+          "oklch(28% 0.089 205)",
+          "oklch(40% 0.089 205)",
+          "oklch(52% 0.089 205)",
+          "oklch(64% 0.089 205)",
+          "oklch(76% 0.089 205)",
+          "oklch(86% 0.089 205)",
+          "oklch(95% 0.089 205)"
+        ]
+      },
+      "ok": {
+        "canonical": "oklch(51.6% 0.111 154)",
+        "displayName": "Éxito",
+        "role": "state",
+        "tonalRamp": [
+          "oklch(15% 0.111 154)",
+          "oklch(28% 0.111 154)",
+          "oklch(40% 0.111 154)",
+          "oklch(52% 0.111 154)",
+          "oklch(64% 0.111 154)",
+          "oklch(76% 0.111 154)",
+          "oklch(86% 0.111 154)",
+          "oklch(95% 0.111 154)"
+        ]
+      },
+      "warn": {
+        "canonical": "oklch(65.9% 0.159 56)",
+        "displayName": "Aviso",
+        "role": "state",
+        "tonalRamp": [
+          "oklch(15% 0.159 56)",
+          "oklch(28% 0.159 56)",
+          "oklch(40% 0.159 56)",
+          "oklch(52% 0.159 56)",
+          "oklch(64% 0.159 56)",
+          "oklch(76% 0.159 56)",
+          "oklch(86% 0.159 56)",
+          "oklch(95% 0.159 56)"
+        ]
+      },
+      "info": {
+        "canonical": "oklch(39.1% 0.140 264)",
+        "displayName": "Información",
+        "role": "state",
+        "tonalRamp": [
+          "oklch(15% 0.140 264)",
+          "oklch(28% 0.140 264)",
+          "oklch(40% 0.140 264)",
+          "oklch(52% 0.140 264)",
+          "oklch(64% 0.140 264)",
+          "oklch(76% 0.140 264)",
+          "oklch(86% 0.140 264)",
+          "oklch(95% 0.140 264)"
+        ]
+      },
+      "crit": {
+        "canonical": "oklch(54.1% 0.197 29)",
+        "displayName": "Error (bermellón)",
+        "role": "state",
+        "tonalRamp": [
+          "oklch(15% 0.197 29)",
+          "oklch(28% 0.197 29)",
+          "oklch(40% 0.197 29)",
+          "oklch(52% 0.197 29)",
+          "oklch(64% 0.197 29)",
+          "oklch(76% 0.197 29)",
+          "oklch(86% 0.197 29)",
+          "oklch(95% 0.197 29)"
+        ]
+      }
+    },
+    "motion": [
+      {
+        "name": "paso",
+        "purpose": "Entrada seca de la hoja y cambios de estado.",
+        "value": "90ms steps(2, end), opacity 0.4 a 1"
+      },
+      {
+        "name": "livepulse",
+        "purpose": "Punto de conexión en vivo.",
+        "value": "1.8s infinite, anillo verde de 0 a 8px"
+      },
+      {
+        "name": "reduced-motion",
+        "purpose": "Apaga paso y livepulse.",
+        "value": "@media (prefers-reduced-motion: reduce) { animation: none }"
+      }
+    ],
+    "shadows": [
+      {
+        "name": "corte-de-hoja",
+        "purpose": "Borde duro de la hoja lechosa del lado del corte; sin desenfoque.",
+        "value": "6px 0 0 rgb(27 27 24 / 18%)"
+      },
+      {
+        "name": "foco",
+        "purpose": "Anillo de foco doble visible sobre cualquier tablero.",
+        "value": "outline: 3px solid #1b1b18; outline-offset: 2px; box-shadow: 0 0 0 5px #fff"
+      }
+    ],
+    "typographyMeta": {
+      "body": {
+        "displayName": "Body",
+        "purpose": "Interfaz general; tablas en 13px."
+      },
+      "display": {
+        "displayName": "Display",
+        "purpose": "Título del login."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Cifras de datos en JetBrains Mono, tabulares."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Título de página."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Etiquetas de campo y chips."
+      },
+      "prose": {
+        "displayName": "Prose",
+        "purpose": "Subtítulos y texto largo en Source Serif 4, máx. 68ch."
+      },
+      "table-head": {
+        "displayName": "Table head",
+        "purpose": "Cabeceras de tabla en mayúsculas espaciadas."
+      }
+    }
+  },
+  "generatedAt": "2026-10-11T00:55:06.191Z",
+  "narrative": {
+    "donts": [
+      "Don't usar el bermellón (#c8281e) fuera de errores.",
+      "Don't reintroducir el verde bosque/crema anterior ni una barra lateral oscura.",
+      "Don't suavizar cambios de estado con curvas ni duraciones largas; usar el paso seco de 90 ms (`.paso`).",
+      "Don't añadir sombras difusas ni tarjetas flotantes en cada bloque; la profundidad es la hoja sobre el tablero.",
+      "Don't teñir botones o campos con el color de la sección.",
+      "Don't usar la serif para títulos o controles."
+    ],
+    "dos": [
+      "Do fijar `data-sec` en el contenedor de cada sección y derivar de `--sec` el tablero y la selección.",
+      "Do dejar la hoja lechosa como único elemento con sombra, con el corte de 6px.",
+      "Do usar tinta para toda acción primaria, en cualquier sección.",
+      "Do poner cifras en JetBrains Mono con tabulares.",
+      "Do mantener objetivos táctiles de 44px o más en campo y 56px en la acción principal.",
+      "Do duplicar la severidad con texto, icono o trama."
+    ],
+    "keyCharacteristics": [
+      "Un color pleno por sección, fijado con `data-sec` y expuesto como `--sec` / `--sec-ink`.",
+      "Hoja lechosa (#f7f6f2) sobre papel (#ece9e1); tinta #1b1b18 como único color de acción.",
+      "Tres voces tipográficas: Public Sans (interfaz), Source Serif 4 (texto largo), JetBrains Mono (cifras).",
+      "Severidad nunca solo por color: etiqueta, icono o trama diagonal acompañan.",
+      "Estado de conexión y de envío siempre visible."
+    ],
+    "northStar": "El Manual de Pestañas",
+    "overview": "La interfaz es un manual de software con divisores de color. Cada sección tiene un tablero de color pleno (Panel amarillo cromo, Mapa ultramar, Parcelas verde pasto, Alertas naranja óxido, Catálogos violeta, Campo verde azulado) y la hoja de trabajo, una hoja lechosa, flota encima con una sombra dura y corta en su lado cortado. El supervisor sabe en qué división está por el color antes de leer. Rechaza el panel gris con un solo acento y la barra lateral verde oscura.\n\nEl sistema sirve a dos densidades con un solo lenguaje: gestión densa y escaneable en escritorio, campo grande y táctil en celular a pleno sol. Todo es plano y de tinta casi negra sobre papel cálido; el color pleno se concentra en el tablero de sección y en los estados. Los cambios de estado no se suavizan: ocurren en pasos secos de 90 ms.",
+    "rules": [
+      {
+        "body": "El rojo (#c8281e) es de errores. No es decoración ni acento de sección; el naranja óxido de Alertas es otro tono y otra función.",
+        "name": "The Bermellón Rule",
+        "section": "colors"
+      },
+      {
+        "body": "El color de sección vive en el tablero, la cuña de pestaña activa y el cuadrito de la pestaña. Los botones y controles se quedan en tinta.",
+        "name": "The Tablero Rule",
+        "section": "colors"
+      },
+      {
+        "body": "Toda severidad se duplica con texto, icono o la trama diagonal `.trama`.",
+        "name": "The Not-Color-Alone Rule",
+        "section": "colors"
+      },
+      {
+        "body": "Cifras de datos en mono y `tabular-nums`; las tablas siempre tabulares.",
+        "name": "The Tabular Rule",
+        "section": "typography"
+      },
+      {
+        "body": "La serif solo para texto de lectura, nunca para títulos ni controles.",
+        "name": "The Serif-For-Sentences Rule",
+        "section": "typography"
+      },
+      {
+        "body": "La única sombra del sistema es el corte de la hoja: desplazamiento horizontal, sin desenfoque. Menús y diálogos se separan con borde, no con sombras difusas.",
+        "name": "The Cut-Edge Rule",
+        "section": "elevation"
+      }
+    ]
+  },
+  "schemaVersion": 2,
+  "title": "Design System: Inventario Forestal AIDER"
+}

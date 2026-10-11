@@ -11,8 +11,10 @@
   "dependencies": {
     "@reto-11-tgi-ingenieria/auth": "workspace:*",
     "@reto-11-tgi-ingenieria/db": "workspace:*",
+    "@reto-11-tgi-ingenieria/domain": "workspace:*",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
+    "drizzle-orm": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

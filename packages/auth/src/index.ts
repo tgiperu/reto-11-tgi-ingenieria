@@ -4,22 +4,34 @@ import type { Database } from "@reto-11-tgi-ingenieria/db";
 import * as schema from "@reto-11-tgi-ingenieria/db/schema/auth";
 import { betterAuth } from "better-auth";
 
-export type AuthConfig = {
-  BETTER_AUTH_URL: string;
+export interface AuthConfig {
   BETTER_AUTH_SECRET: string;
+  BETTER_AUTH_URL: string;
   CORS_ORIGIN: string;
-};
+}
 
 export function createAuth(
   env: AuthConfig,
   database: Database,
-  desktopOrigins: readonly string[] = [],
+  desktopOrigins: readonly string[] = []
 ) {
   return betterAuth({
+    advanced: {
+      defaultCookieAttributes: {
+        httpOnly: true,
+        sameSite: "none",
+        secure: true,
+      },
+    },
+    baseURL: env.BETTER_AUTH_URL,
     database: drizzleAdapter(database, {
       provider: "pg",
       schema,
     }),
+    // Las cuentas las crea un administrador (ver `bun run db:seed`): no hay registro público.
+    emailAndPassword: { disableSignUp: true, enabled: true },
+    plugins: [expo()],
+    secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: [
       env.CORS_ORIGIN,
       ...desktopOrigins,
@@ -27,17 +39,17 @@ export function createAuth(
       "exp://",
       "http://localhost:8081",
     ],
-    emailAndPassword: { enabled: true },
-    secret: env.BETTER_AUTH_SECRET,
-    baseURL: env.BETTER_AUTH_URL,
-    advanced: {
-      defaultCookieAttributes: {
-        sameSite: "none",
-        secure: true,
-        httpOnly: true,
+    user: {
+      additionalFields: {
+        brigadeId: { input: false, required: false, type: "string" },
+        role: {
+          defaultValue: "brigadista",
+          input: false,
+          required: false,
+          type: "string",
+        },
       },
     },
-    plugins: [expo()],
   });
 }
 

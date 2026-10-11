@@ -1,1 +1,237 @@
 @import "@reto-11-tgi-ingenieria/ui/globals.css";
+@import "@fontsource-variable/public-sans/wght.css";
+@import "@fontsource-variable/source-serif-4/wght.css";
+@import "@fontsource-variable/jetbrains-mono/wght.css";
+
+/*
+ * Manual de pestañas: cada división tiene un tablero de color pleno y la hoja
+ * de trabajo flota encima. --sec lo fija el shell según la sección activa.
+ */
+:root {
+  --background: #ece9e1;
+  --foreground: #1b1b18;
+  --card: #ffffff;
+  --card-foreground: #1b1b18;
+  --popover: #ffffff;
+  --popover-foreground: #1b1b18;
+  --primary: #1b1b18;
+  --primary-foreground: #ffffff;
+  --secondary: #efede5;
+  --secondary-foreground: #1b1b18;
+  --muted: #efede5;
+  --muted-foreground: #5e5c54;
+  --accent: #efede5;
+  --accent-foreground: #1b1b18;
+  --destructive: #c8281e;
+  --border: #dad7cc;
+  --input: #bdb9aa;
+  --ring: #1b1b18;
+  --radius: 0.5rem;
+
+  --sec: #f2b705;
+  --sec-ink: #1b1b18;
+}
+
+@theme inline {
+  --font-sans: "Public Sans Variable", system-ui, sans-serif;
+  --font-serif: "Source Serif 4 Variable", Georgia, serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --color-ink: #1b1b18;
+  --color-ink-2: #3f3e38;
+  --color-ink-3: #5e5c54;
+  --color-paper: #ece9e1;
+  --color-line: #dad7cc;
+  --color-line-2: #e6e3d8;
+  --color-edge: #bdb9aa;
+  --color-field: #8a8678;
+  --color-sunken: #efede5;
+  --color-sheet: #f7f6f2;
+
+  --color-primary: #1b1b18;
+  --color-primary-2: #34332d;
+  --color-sec: var(--sec);
+  --color-sec-ink: var(--sec-ink);
+  --color-sel: color-mix(in oklab, var(--sec) 16%, #ffffff);
+
+  /* Divisores del manual: un tono pleno por sección. */
+  --color-sec-panel: #f2b705;
+  --color-sec-mapa: #1d3e8f;
+  --color-sec-parcelas: #257a4a;
+  --color-sec-alertas: #d2420e;
+  --color-sec-catalogos: #6b3fa0;
+  --color-sec-campo: #0e7c86;
+
+  /* Estados. El bermellón queda reservado a errores. */
+  --color-ok-bg: #e0efe5;
+  --color-ok-fg: #14522f;
+  --color-ok: #257a4a;
+  --color-ok-band: #9cc9ae;
+  --color-warn-bg: #fcebd0;
+  --color-warn-fg: #6e3b00;
+  --color-warn: #d9730d;
+  --color-warn-deep: #a8540a;
+  --color-warn-edge: #ebc08a;
+  --color-crit-bg: #fbe3de;
+  --color-crit-fg: #8a1c12;
+  --color-crit: #c8281e;
+  --color-info-bg: #e1e7f6;
+  --color-info-fg: #17316f;
+  --color-info: #1d3e8f;
+}
+
+html {
+  color-scheme: light;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Cifras de datos siempre tabulares. */
+.font-mono,
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  color: var(--sec-ink);
+  background: var(--sec);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px #ffffff;
+}
+
+/* Barras de desplazamiento de las listas y tablas. */
+* {
+  scrollbar-color: var(--color-edge) transparent;
+  scrollbar-width: thin;
+}
+
+/* Secciones: el shell pone data-sec en el contenedor. */
+[data-sec="panel"] {
+  --sec: #f2b705;
+  --sec-ink: #1b1b18;
+}
+[data-sec="mapa"] {
+  --sec: #1d3e8f;
+  --sec-ink: #ffffff;
+}
+[data-sec="parcelas"] {
+  --sec: #257a4a;
+  --sec-ink: #ffffff;
+}
+[data-sec="alertas"] {
+  --sec: #d2420e;
+  --sec-ink: #ffffff;
+}
+[data-sec="catalogos"] {
+  --sec: #6b3fa0;
+  --sec-ink: #ffffff;
+}
+[data-sec="campo"] {
+  --sec: #0e7c86;
+  --sec-ink: #ffffff;
+}
+
+/* La hoja lechosa: sombra dura corta del lado del corte. */
+.hoja {
+  background: var(--color-sheet);
+  box-shadow: 6px 0 0 rgb(27 27 24 / 18%);
+}
+
+/* Severidad que no depende del color: trama diagonal. */
+.trama {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 4px,
+    rgb(210 66 14 / 28%) 4px 5px
+  );
+}
+
+@keyframes livepulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(37 122 74 / 55%);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgb(37 122 74 / 0%);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(37 122 74 / 0%);
+  }
+}
+
+.live-dot {
+  animation: livepulse 1.8s infinite;
+}
+
+/* Cambios de estado en dos pasos secos, sin curvas. */
+@keyframes paso {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.paso {
+  animation: paso 90ms steps(2, end) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot,
+  .paso {
+    animation: none;
+  }
+}
+
+/* MapLibre trae su propio CSS; solo ajustamos el contenedor. */
+.maplibregl-map {
+  font-family: var(--font-sans);
+}
+
+/* Base de OpenStreetMap más calmada para que los marcadores sean lo que se lee. */
+.maplibregl-canvas {
+  filter: saturate(0.5) contrast(0.94);
+}
+
+/* Marcador de parcela: número en mono, forma según estado, compacto al alejarse. */
+.pin {
+  --pin-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pin-size);
+  height: var(--pin-size);
+  padding: 0;
+  border: 0;
+  border-radius: var(--pin-radius, 50%);
+  background: var(--pin-color, #5e5c54);
+  box-shadow: var(--pin-ring, 0 0 0 2px #fff);
+  color: #fff;
+  font: 600 12px var(--font-mono);
+  cursor: pointer;
+}
+
+.pin:hover {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.pins-compact .pin {
+  width: calc(var(--pin-size) * 0.55);
+  height: calc(var(--pin-size) * 0.55);
+  font-size: 0;
+}
+
+dialog::backdrop {
+  background: rgb(27 27 24 / 55%);
+}
