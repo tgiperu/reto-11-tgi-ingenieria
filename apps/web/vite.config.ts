@@ -36,9 +36,9 @@ export default defineConfig({
           },
         ],
         lang: "es",
-        name: "Inventario Forestal AIDER",
+        name: "SIBOSE · Sistema de Inventario de Bosque Seco",
         scope: "/",
-        short_name: "Inventario",
+        short_name: "SIBOSE",
         start_url: "/",
         theme_color: "#245237",
       },
@@ -71,6 +71,7 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   server: {
+    host: true,
     port: 3001,
   },
   worker: {

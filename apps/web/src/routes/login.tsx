@@ -58,40 +58,51 @@ function LoginPage() {
 
   return (
     <main
-      className="grid min-h-svh bg-paper lg:grid-cols-[minmax(0,1.15fr)_minmax(440px,1fr)]"
+      className="relative isolate grid min-h-svh overflow-hidden bg-primary lg:grid-cols-[minmax(0,1fr)_minmax(420px,460px)]"
       data-sec="panel"
     >
-      <section
-        aria-hidden="true"
-        className="relative h-56 overflow-hidden bg-primary sm:h-72 lg:h-auto"
-      >
-        <img
-          alt=""
-          className="absolute inset-0 size-full object-cover object-[22%_78%] lg:object-[28%_55%]"
-          fetchPriority="high"
-          height={1024}
-          src="/bg-login.webp"
-          width={1536}
+      <img
+        alt=""
+        className="absolute inset-0 -z-20 hidden size-full object-cover lg:block object-[22%_78%] lg:object-[28%_55%]"
+        fetchPriority="high"
+        height={1024}
+        src="/bg-login.webp"
+        width={1536}
+      />
+      <section className="relative isolate hidden flex-col justify-end p-6 text-white lg:flex lg:p-14">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-linear-to-tr from-primary/90 via-primary/45 to-transparent"
         />
+        <div className="hidden max-w-[34rem] flex-col gap-5 lg:flex">
+          <p className="text-balance font-bold text-5xl leading-[1.05] tracking-[-0.02em] xl:text-6xl">
+            Bosque manejado, ¡Futuro asegurado!
+          </p>
+          <p className="max-w-[30rem] font-serif text-lg text-white/90 leading-relaxed">
+            Inventario y monitoreo del bosque seco en tiempo real.
+          </p>
+        </div>
+        <p className="mt-0 hidden text-sm text-white/80 lg:mt-14 lg:block">
+          Plataforma de gestión y monitoreo del bosque seco · Tumbes y Piura
+        </p>
       </section>
 
-      <section className="relative flex flex-col justify-center bg-sec px-3 py-8 sm:px-8 lg:px-12">
-        <div className="hoja paso mx-auto flex w-full max-w-md flex-col gap-7 px-6 py-8 sm:px-9 sm:py-10">
-          <header className="flex flex-col gap-4">
+      <section className="paso relative flex min-h-svh flex-col justify-center gap-8 bg-sheet px-6 py-10 sm:px-12 lg:bg-sheet/80 lg:px-10 lg:backdrop-blur-2xl lg:backdrop-saturate-150">
+        <div className="mx-auto my-auto flex w-full max-w-sm flex-col gap-7">
+          <header className="flex flex-col gap-6">
             <img
               alt="AIDER"
-              className="rounded-full"
-              height={52}
+              className="mx-auto size-28"
+              height={112}
               src="/brand/aider-mark.png"
-              width={52}
+              width={112}
             />
-            <div className="flex flex-col gap-1.5">
-              <h1 className="font-bold text-3xl tracking-tight">
-                Inventario Forestal
+            <div className="flex flex-col gap-1 text-center">
+              <h1 className="font-bold text-5xl text-[#1e5132] tracking-tight">
+                SIBOSE
               </h1>
-              <p className="font-serif text-[15px] text-ink-3 leading-relaxed">
-                Ingresa con tu cuenta para registrar en campo o revisar las
-                mediciones.
+              <p className="font-semibold text-[#1e5132] text-sm">
+                Sistema de Inventario de Bosque Seco
               </p>
             </div>
           </header>
@@ -183,11 +194,6 @@ function LoginPage() {
               )}
             </Button>
           </form>
-
-          <p className="text-ink-3 text-xs">
-            Las cuentas las crea un administrador. Si no tienes una, pídesela a
-            tu jefe de brigada.
-          </p>
         </div>
       </section>
     </main>

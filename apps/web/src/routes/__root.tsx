@@ -19,7 +19,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
   component: RootComponent,
   head: () => ({
     meta: [
-      { title: "Inventario Forestal AIDER" },
+      { title: "SIBOSE · AIDER" },
       {
         name: "description",
         content:

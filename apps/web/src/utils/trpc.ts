@@ -5,6 +5,7 @@ import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import { toast } from "sonner";
 
 import { ENV } from "../env";
+import { resolveServerUrl } from "../lib/server-url";
 
 function getServerUrl(url: string) {
   const processEnv = typeof process === "undefined" ? undefined : process.env;
@@ -14,7 +15,8 @@ function getServerUrl(url: string) {
       : processEnv.SERVER_URL;
   }
 
-  return url.endsWith("/") ? url.slice(0, -1) : url;
+  const resolved = resolveServerUrl(url);
+  return resolved.endsWith("/") ? resolved.slice(0, -1) : resolved;
 }
 
 export const queryClient = new QueryClient({

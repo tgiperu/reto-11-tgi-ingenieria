@@ -158,7 +158,7 @@ export function StaffShell({ session }: { session: CachedSession }) {
             width={34}
           />
           <span className="hidden flex-col leading-tight sm:flex">
-            <strong className="text-sm">Inventario Forestal</strong>
+            <strong className="text-sm">SIBOSE</strong>
             <span className="hidden text-ink-3 text-xs sm:block">
               Bosque seco · AIDER
             </span>

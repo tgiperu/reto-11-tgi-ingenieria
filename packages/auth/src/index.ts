@@ -15,13 +15,13 @@ export function createAuth(
   database: Database,
   desktopOrigins: readonly string[] = []
 ) {
+  const isHttps = env.BETTER_AUTH_URL.startsWith("https://");
   return betterAuth({
     advanced: {
-      defaultCookieAttributes: {
-        httpOnly: true,
-        sameSite: "none",
-        secure: true,
-      },
+      // Sin HTTPS (desarrollo en red local) el navegador descarta las cookies `Secure`.
+      defaultCookieAttributes: isHttps
+        ? { httpOnly: true, sameSite: "none", secure: true }
+        : { httpOnly: true, sameSite: "lax", secure: false },
     },
     baseURL: env.BETTER_AUTH_URL,
     database: drizzleAdapter(database, {
@@ -33,7 +33,7 @@ export function createAuth(
     plugins: [expo()],
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: [
-      env.CORS_ORIGIN,
+      ...env.CORS_ORIGIN.split(",").map((o) => o.trim()),
       ...desktopOrigins,
       "reto-11-tgi-ingenieria://",
       "exp://",
