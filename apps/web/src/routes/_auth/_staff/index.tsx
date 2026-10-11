@@ -144,9 +144,9 @@ function PanelPage() {
       const rows = await queryClient.fetchQuery(
         trpc.dashboard.export.queryOptions(filters)
       );
-      const summary = await exportOutliers(rows, speciesName, filters.variable);
+      const summary = await exportOutliers(rows, speciesName);
       toast.success("Excel exportado", {
-        description: `${summary.fileName} · ${summary.species} especies · ${summary.rowsDap} DAP · ${summary.rowsAlt} altura · ${summary.plots} parcelas`,
+        description: `${summary.fileName} · ${summary.species} especies · ${summary.plots} parcelas`,
       });
     } catch (error) {
       toast.error(

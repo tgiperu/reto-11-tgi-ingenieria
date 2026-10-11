@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useId, useRef } from "react";
 
 import { Button } from "./button";
 
@@ -19,6 +19,7 @@ export function Modal({
   size?: "md" | "lg" | "xl";
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
 
   useEffect(() => {
     const dialog = ref.current;
@@ -36,15 +37,20 @@ export function Modal({
 
   return (
     <dialog
-      aria-labelledby="modal-title"
+      aria-labelledby={titleId}
       className={`m-auto ${{ lg: "w-[min(780px,calc(100vw-32px))]", md: "w-[min(520px,calc(100vw-32px))]", xl: "w-[min(1440px,calc(100vw-32px))]" }[size]} rounded-lg border border-line bg-white p-0 text-ink shadow-[6px_0_0_rgb(27_27_24/18%)]`}
-      onClose={onClose}
+      onClose={(e) => {
+        // El evento «close» sube por el árbol de React: un diálogo anidado no debe cerrar al padre.
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
       ref={ref}
     >
       {open ? (
         <div className="flex max-h-[90vh] flex-col">
           <div className="flex items-center justify-between gap-3 border-line border-b px-5 py-4">
-            <h2 className="font-bold text-lg" id="modal-title">
+            <h2 className="font-bold text-lg" id={titleId}>
               {title}
             </h2>
             <Button

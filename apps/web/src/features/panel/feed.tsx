@@ -145,8 +145,7 @@ export function Feed({
           </h2>
           <span className="flex items-center gap-1.5 text-[13px] text-ink-3">
             <span className="live-dot size-2 rounded-full bg-ok" />
-            {plural(count, "medición", "mediciones")} · las nuevas aparecen
-            arriba
+            {plural(count, "medición", "mediciones")}
           </span>
         </div>
         {/* biome-ignore lint/a11y/useSemanticElements: grupo de botones con role=group accesible */}
