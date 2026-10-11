@@ -9,6 +9,10 @@ import {
   formatDistance,
 } from "@reto-11-tgi-ingenieria/domain/geo";
 import {
+  type HealthKey,
+  healthRequired,
+} from "@reto-11-tgi-ingenieria/domain/health";
+import {
   clinometerHeight,
   deriveMetrics,
   nextFreeCode,
@@ -34,6 +38,7 @@ import {
   type LocalTree,
   treeKey,
 } from "@/lib/offline/db";
+import { newClientId } from "@/lib/offline/id";
 import { compressPhoto } from "@/lib/offline/photo";
 
 import { useBundleMeta, useGeolocation, useNow } from "./hooks";
@@ -41,6 +46,7 @@ import {
   AlertList,
   CrownSection,
   DacSection,
+  HealthSection,
   type HeightMode,
   HeightSection,
   PhotoSection,
@@ -131,6 +137,7 @@ export function RegistroForm() {
   const [dist, setDist] = useState("");
   const [p0, setP0] = useState("");
   const [p1, setP1] = useState("");
+  const [health, setHealth] = useState<HealthKey | null>(null);
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [notes, setNotes] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -356,6 +363,9 @@ export function RegistroForm() {
     if (category === "br" && metrics.dacAvg === null) {
       return "Falta la lectura de DAC";
     }
+    if (health === null && healthRequired(category)) {
+      return "Elige el estado sanitario";
+    }
     return null;
   }
 
@@ -368,6 +378,7 @@ export function RegistroForm() {
     setDac1("");
     setDac2("");
     setHDirect("");
+    setHealth(null);
     setPhoto(null);
     setNotes("");
   }
@@ -383,7 +394,7 @@ export function RegistroForm() {
         accuracy: fix?.accuracy ?? null,
         alertTitles: alerts.map((a) => a.title),
         category,
-        clientId: crypto.randomUUID(),
+        clientId: newClientId(),
         clino:
           hMode === "clino" &&
           clino.distance !== null &&
@@ -403,6 +414,7 @@ export function RegistroForm() {
         dac2: parseDecimal(dac2),
         dapEq: metrics.dapEq,
         error: null,
+        health,
         height,
         heightMode: hMode,
         isRemeasure,
@@ -444,9 +456,13 @@ export function RegistroForm() {
           : `N° ${code} guardado`
       );
       resetForm();
-    } catch {
+    } catch (error) {
+      const noSpace =
+        error instanceof DOMException && error.name === "QuotaExceededError";
       toast.error(
-        "No se pudo guardar en el equipo. Libera espacio e inténtalo de nuevo."
+        noSpace
+          ? "No se pudo guardar en el equipo. Libera espacio e inténtalo de nuevo."
+          : `No se pudo guardar el registro (${error instanceof Error ? error.message : "error desconocido"}).`
       );
     } finally {
       setSaving(false);
@@ -506,7 +522,7 @@ export function RegistroForm() {
 
   return (
     <Shell fix={fix} message={toastState.message} now={now}>
-      <div className="flex flex-1 flex-col gap-3.5 overflow-y-auto px-4 pt-3.5 pb-4">
+      <div className="flex flex-1 flex-col gap-3.5 px-4 pt-3.5 pb-4">
         <StepHead n={1} title="¿Dónde estás?" />
         <Combobox
           headline={(n, all) =>
@@ -659,6 +675,12 @@ export function RegistroForm() {
           />
         )}
 
+        <HealthSection
+          onChange={setHealth}
+          required={healthRequired(category)}
+          value={health}
+        />
+
         <StepHead n={4} title="Cierre" />
         <PhotoSection
           hint={
@@ -685,7 +707,7 @@ export function RegistroForm() {
         </section>
       </div>
 
-      <footer className="border-line border-t bg-white px-4 pt-2.5 pb-4">
+      <footer className="sticky bottom-0 z-20 border-line border-t bg-white px-4 pt-2.5 pb-4">
         <Button
           className="w-full"
           disabled={saving}
@@ -698,11 +720,11 @@ export function RegistroForm() {
       </footer>
 
       {confirmOpen ? (
-        <div className="absolute inset-0 z-50 flex flex-col justify-end bg-primary/50">
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-primary/50">
           <div
             aria-labelledby="conf-title"
             aria-modal="true"
-            className="flex flex-col gap-3 rounded-t-[18px] bg-white px-4 pt-[18px] pb-5"
+            className="mx-auto flex w-full max-w-[480px] flex-col gap-3 rounded-t-[18px] bg-white px-4 pt-[18px] pb-5"
             role="dialog"
           >
             <strong className="text-lg" id="conf-title">
@@ -756,7 +778,7 @@ function Shell({
 }) {
   return (
     <div
-      className="relative mx-auto flex h-svh w-full max-w-[480px] flex-col overflow-hidden bg-sheet text-ink"
+      className="relative mx-auto flex min-h-svh w-full max-w-[480px] flex-col bg-sheet text-ink"
       data-sec="campo"
     >
       <StatusBar />

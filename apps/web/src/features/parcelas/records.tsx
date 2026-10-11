@@ -4,6 +4,7 @@ import {
   type ReviewState,
   type Role,
 } from "@reto-11-tgi-ingenieria/domain/constants";
+import { healthLabel } from "@reto-11-tgi-ingenieria/domain/health";
 import { average } from "@reto-11-tgi-ingenieria/domain/measure";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, Lock, LockOpen } from "lucide-react";
@@ -63,6 +64,7 @@ interface RecordRow {
   dac2: number | null;
   dapEq: number | null;
   hasPhoto: boolean;
+  health: string | null;
   height: number | null;
   id: string;
   measuredAt: string;
@@ -166,6 +168,7 @@ function RecordsTable({
               <Th className="text-right">DAC prom. (cm)</Th>
             </>
           ) : null}
+          <Th>Sanidad</Th>
           <Th>Alertas</Th>
           <Th>Estado</Th>
           <Th>Foto</Th>
@@ -234,6 +237,7 @@ function RecordsTable({
                       </Td>
                     </>
                   ) : null}
+                  <Td>{i === 0 ? healthLabel(r.health) : ""}</Td>
                   <Td>{i === 0 ? <AlertTags alerts={r.alerts} /> : null}</Td>
                   <Td>{i === 0 ? <ReviewChip review={r.review} /> : null}</Td>
                   <Td>

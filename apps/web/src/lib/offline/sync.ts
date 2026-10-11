@@ -116,6 +116,7 @@ async function toPayload(record: LocalRecord): Promise<PushRecord> {
     crownMin: record.crownMin,
     dac1: record.dac1,
     dac2: record.dac2,
+    health: record.health ?? null,
     height: record.height,
     heightMode: record.heightMode,
     isRemeasure: record.isRemeasure,

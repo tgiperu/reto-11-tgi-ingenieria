@@ -1,3 +1,4 @@
+import { healthLabel } from "@reto-11-tgi-ingenieria/domain/health";
 import { cn } from "@reto-11-tgi-ingenieria/ui/lib/utils";
 import { Download, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { useState } from "react";
@@ -45,6 +46,7 @@ export async function exportBackup(fileName: string): Promise<number> {
         "Copa mayor (m)",
         "DAC 1 (cm)",
         "DAC 2 (cm)",
+        "Estado sanitario",
         "Fecha",
         "Remedición",
         "Alertas",
@@ -64,6 +66,7 @@ export async function exportBackup(fileName: string): Promise<number> {
         r.crownMax ?? "",
         r.dac1 ?? "",
         r.dac2 ?? "",
+        r.health ? healthLabel(r.health) : "",
         fmtDateTime(r.measuredAt),
         r.isRemeasure ? "Sí" : "No",
         r.alertTitles.join("; "),

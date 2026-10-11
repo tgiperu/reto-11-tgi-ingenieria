@@ -2,6 +2,7 @@ import type {
   CategoryKey,
   CodeSeries,
 } from "@reto-11-tgi-ingenieria/domain/categories";
+import type { HealthKey } from "@reto-11-tgi-ingenieria/domain/health";
 import type { RuleSetting } from "@reto-11-tgi-ingenieria/domain/rules";
 import type {
   PullPlot,
@@ -26,6 +27,8 @@ export interface LocalRecord {
   dac2: number | null;
   dapEq: number | null;
   error: string | null;
+  /** Registros guardados antes de existir el campo no lo traen. */
+  health?: HealthKey | null;
   height: number | null;
   heightMode: "direct" | "clino";
   isRemeasure: boolean;

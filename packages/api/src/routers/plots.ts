@@ -16,6 +16,7 @@ import {
   utmDistanceMeters,
   utmToLatLon,
 } from "@reto-11-tgi-ingenieria/domain/geo";
+import { HEALTH_KEYS } from "@reto-11-tgi-ingenieria/domain/health";
 import { deriveMetrics } from "@reto-11-tgi-ingenieria/domain/measure";
 import { normalizeKey, tidy } from "@reto-11-tgi-ingenieria/domain/names";
 import { TRPCError } from "@trpc/server";
@@ -145,6 +146,7 @@ export const plotsRouter = router({
         crownMin: z.number().nonnegative().nullable().optional(),
         dac1: z.number().nonnegative().nullable().optional(),
         dac2: z.number().nonnegative().nullable().optional(),
+        health: z.enum(HEALTH_KEYS).nullable().optional(),
         height: z.number().nonnegative().max(80).nullable().optional(),
         id: z.string().uuid(),
         notes: z.string().max(2000).optional(),
@@ -183,6 +185,7 @@ export const plotsRouter = router({
         crownMin: input.crownMin === undefined ? row.crownMin : input.crownMin,
         dac1: input.dac1 === undefined ? row.dac1 : input.dac1,
         dac2: input.dac2 === undefined ? row.dac2 : input.dac2,
+        health: input.health === undefined ? row.health : input.health,
         height: input.height === undefined ? row.height : input.height,
         notes: input.notes ?? row.notes,
         speciesId:
@@ -228,6 +231,7 @@ export const plotsRouter = router({
           dac1: next.dac1,
           dac2: next.dac2,
           dapEq: metrics.dapEq,
+          health: next.health,
           height: next.height,
           notes: next.notes,
           review,

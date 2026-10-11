@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import { carbonOf } from "./carbon";
 import { categoryFactor } from "./categories";
 import { distanceMeters, utmToLatLon } from "./geo";
+import { healthRequired, parseHealth } from "./health";
 import { autoMap, buildImportPreview } from "./import";
 import { clinometerHeight, equivalentDiameter } from "./measure";
 import { groupVariants, normalizeTime } from "./names";
@@ -139,5 +140,21 @@ describe("importación", () => {
     expect(preview.records[0]?.stems).toEqual([16.2, 8]);
     expect(preview.blockedRows).toBe(1);
     expect(preview.warningRows).toBeGreaterThan(0);
+  });
+});
+
+describe("estado sanitario", () => {
+  it("reconoce las variantes escritas a mano", () => {
+    expect(parseHealth("Quemados")).toBe("quemado");
+    expect(parseHealth(" muerto en pie ")).toBe("muerto_pie");
+    expect(parseHealth("Sano")).toBe("sano");
+    expect(parseHealth("Dañado")).toBe("danado");
+    expect(parseHealth("")).toBeNull();
+    expect(parseHealth("xyz")).toBeNull();
+  });
+
+  it("no se exige en brinzales", () => {
+    expect(healthRequired("br")).toBe(false);
+    expect(healthRequired("fu")).toBe(true);
   });
 });

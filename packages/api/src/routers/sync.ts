@@ -16,6 +16,7 @@ import {
 } from "@reto-11-tgi-ingenieria/domain/categories";
 import type { PlotStatus } from "@reto-11-tgi-ingenieria/domain/constants";
 import { distanceMeters } from "@reto-11-tgi-ingenieria/domain/geo";
+import { healthRequired } from "@reto-11-tgi-ingenieria/domain/health";
 import { deriveMetrics } from "@reto-11-tgi-ingenieria/domain/measure";
 import {
   type PullBundle,
@@ -303,6 +304,11 @@ export const syncRouter = router({
           newTrees.push(treeRow);
         }
 
+        if (record.health === null && healthRequired(record.category)) {
+          reject(record, `Falta el estado sanitario del N° ${record.code}`);
+          continue;
+        }
+
         const metrics = deriveMetrics(record);
         const prevRow = previousByTree.get(treeRow.id);
         const gpsDistance =
@@ -355,6 +361,7 @@ export const syncRouter = router({
           dac2: record.dac2,
           dapEq: metrics.dapEq,
           hasPhoto: record.photo !== null,
+          health: record.health,
           height: record.height,
           heightMode: record.heightMode,
           id: record.clientId,

@@ -322,6 +322,7 @@ export const importsRouter = router({
           dac1: r.dac1,
           dac2: r.dac2,
           dapEq: metrics.dapEq,
+          health: r.health,
           height: r.height,
           measuredAt: measuredAtOf(r.date, r.timeStart),
           notes: r.notes,

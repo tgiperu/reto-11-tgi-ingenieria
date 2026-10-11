@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { CATEGORY_KEYS, type CategoryKey, type CodeSeries } from "./categories";
 import type { PlotStatus, Role } from "./constants";
+import { HEALTH_KEYS } from "./health";
 import type { RuleSetting } from "./rules";
 
 const MAX_STEMS = 40;
@@ -26,6 +27,7 @@ export const pushRecordSchema = z.object({
   crownMin: z.number().nonnegative().nullable(),
   dac1: z.number().nonnegative().nullable(),
   dac2: z.number().nonnegative().nullable(),
+  health: z.enum(HEALTH_KEYS).nullable(),
   height: z.number().nonnegative().max(80).nullable(),
   heightMode: z.enum(["direct", "clino"]),
   isRemeasure: z.boolean(),

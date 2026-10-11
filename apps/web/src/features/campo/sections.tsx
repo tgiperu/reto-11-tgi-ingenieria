@@ -1,3 +1,7 @@
+import {
+  HEALTH_LIST,
+  type HealthKey,
+} from "@reto-11-tgi-ingenieria/domain/health";
 import type { RuleAlert } from "@reto-11-tgi-ingenieria/domain/rules";
 import { cn } from "@reto-11-tgi-ingenieria/ui/lib/utils";
 import { Camera, CircleX, Images, Trash2, TriangleAlert } from "lucide-react";
@@ -270,6 +274,49 @@ export function HeightSection({
           <Readout label="Calculada" value={`${computed} m`} />
         </>
       )}
+    </Section>
+  );
+}
+
+export function HealthSection({
+  value,
+  onChange,
+  required,
+}: {
+  value: HealthKey | null;
+  onChange: (value: HealthKey) => void;
+  required: boolean;
+}) {
+  return (
+    <Section
+      aside={
+        <span className="text-ink-3 text-xs">
+          {required ? "Obligatorio" : "Opcional en brinzales"}
+        </span>
+      }
+      title="Estado sanitario"
+    >
+      <fieldset
+        aria-label="Estado sanitario"
+        className="m-0 grid min-w-0 grid-cols-2 gap-2 border-0 p-0"
+      >
+        {HEALTH_LIST.map((h) => (
+          <button
+            aria-pressed={value === h.key}
+            className={cn(
+              "min-h-12 cursor-pointer rounded-lg border px-2 font-semibold text-[13px]",
+              value === h.key
+                ? "border-primary bg-primary text-white"
+                : "border-field bg-white text-ink"
+            )}
+            key={h.key}
+            onClick={() => onChange(h.key)}
+            type="button"
+          >
+            {h.name}
+          </button>
+        ))}
+      </fieldset>
     </Section>
   );
 }

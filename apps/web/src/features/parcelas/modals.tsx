@@ -7,6 +7,11 @@ import {
   ANPS,
   STRATA,
 } from "@reto-11-tgi-ingenieria/domain/constants";
+import {
+  HEALTH_KEYS,
+  HEALTH_LIST,
+  type HealthKey,
+} from "@reto-11-tgi-ingenieria/domain/health";
 import { parseDecimal } from "@reto-11-tgi-ingenieria/domain/measure";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -165,11 +170,16 @@ export interface CorrectableRecord {
   crownMin: number | null;
   dac1: number | null;
   dac2: number | null;
+  health: string | null;
   height: number | null;
   id: string;
   notes: string;
   speciesId: number | null;
   stems: number[];
+}
+
+function toHealthKey(value: string): HealthKey | null {
+  return HEALTH_KEYS.find((k) => k === value) ?? null;
 }
 
 const STEM_SEPARATOR = /[;,\s]+/;
@@ -193,6 +203,7 @@ export function CorrectModal({
     crownMin: String(record?.crownMin ?? ""),
     dac1: String(record?.dac1 ?? ""),
     dac2: String(record?.dac2 ?? ""),
+    health: record?.health ?? "",
     height: String(record?.height ?? ""),
     notes: record?.notes ?? "",
     reason: "",
@@ -233,6 +244,7 @@ export function CorrectModal({
       crownMin: num(form.crownMin),
       dac1: num(form.dac1),
       dac2: num(form.dac2),
+      health: toHealthKey(form.health),
       height: num(form.height),
       id: record.id,
       notes: form.notes,
@@ -337,6 +349,18 @@ export function CorrectModal({
           value={form.height}
         />
       )}
+      <SelectField
+        label="Estado sanitario"
+        onChange={set("health")}
+        value={form.health}
+      >
+        <option value="">Sin dato</option>
+        {HEALTH_LIST.map((h) => (
+          <option key={h.key} value={h.key}>
+            {h.name}
+          </option>
+        ))}
+      </SelectField>
       <TextAreaField
         label="Observaciones"
         onChange={set("notes")}

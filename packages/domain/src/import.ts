@@ -8,6 +8,7 @@ import {
   parseCategoryKey,
   SEEDLING_MAX_DIAMETER_CM,
 } from "./categories";
+import { HEALTH_KEYS, parseHealth } from "./health";
 import { equivalentDiameter, parseDecimal } from "./measure";
 import {
   groupVariants,
@@ -201,6 +202,13 @@ export const IMPORT_FIELDS = [
     target: "parcela.gabinete_norte",
   },
   {
+    aliases: ["estado sanitario", "sanidad", "estado fitosanitario"],
+    key: "health",
+    label: "Estado sanitario",
+    required: false,
+    target: "individuo.estado_sanitario",
+  },
+  {
     aliases: ["observaciones", "observacion", "comentarios"],
     key: "notes",
     label: "Observaciones",
@@ -263,6 +271,7 @@ export const importRecordSchema = z.object({
   dac1: z.number().nonnegative().nullable(),
   dac2: z.number().nonnegative().nullable(),
   date: z.string().nullable(),
+  health: z.enum(HEALTH_KEYS).nullable(),
   height: z.number().nonnegative().max(80).nullable(),
   notes: z.string().max(2000),
   plot: z.number().int().positive(),
@@ -564,6 +573,17 @@ export function buildImportPreview(
       continue;
     }
 
+    const healthRaw = cellText(pick(ctx, r, "health"));
+    const health = parseHealth(healthRaw);
+    if (healthRaw !== "" && health === null) {
+      add(
+        r,
+        "warning",
+        "health",
+        `Estado sanitario "${healthRaw}" no reconocido`
+      );
+    }
+
     const brigadeRaw = cellText(pick(ctx, r, "brigade"));
     const stratumRaw = cellText(pick(ctx, r, "stratum"));
     const anpRaw = cellText(pick(ctx, r, "anp")).toUpperCase();
@@ -579,6 +599,7 @@ export function buildImportPreview(
       dac1,
       dac2,
       date,
+      health,
       height: cellNumber(pick(ctx, r, "height")),
       notes: cellText(pick(ctx, r, "notes")),
       plot: plotRaw,
