@@ -24,9 +24,9 @@ import {
   hasBlocking,
 } from "@reto-11-tgi-ingenieria/domain/rules";
 import { cn } from "@reto-11-tgi-ingenieria/ui/lib/utils";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Check, History, MapPin, X } from "lucide-react";
+import { History, MapPin, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/app/button";
@@ -56,7 +56,6 @@ import {
 import { StatusBar } from "./status-bar";
 
 const NEAREST_HINT = "Más cercana por GPS · cambia si estás en otra parcela";
-const TOAST_MS = 4500;
 
 function codeBorderClass(duplicate: boolean, isRemeasure: boolean): string {
   if (duplicate) {
@@ -90,37 +89,14 @@ function speciesHint(sp: { dapMax: number | null } | null): string {
     : "Sin rango histórico: no se valida el DAP";
 }
 
-function useToastMessage() {
-  const [message, setMessage] = useState("");
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const show = (text: string) => {
-    setMessage(text);
-    // biome-ignore lint/suspicious/noUnnecessaryConditions: valor mutable en tiempo de ejecución (ref o dato externo)
-    if (timer.current) {
-      clearTimeout(timer.current);
-    }
-    timer.current = setTimeout(() => setMessage(""), TOAST_MS);
-  };
-  useEffect(
-    () => () => {
-      // biome-ignore lint/suspicious/noUnnecessaryConditions: valor mutable en tiempo de ejecución (ref o dato externo)
-      if (timer.current) {
-        clearTimeout(timer.current);
-      }
-    },
-    []
-  );
-  return { message, show };
-}
-
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: muchas reglas de negocio o ramas de presentación que no ganan claridad al dividirse
-export function RegistroForm() {
+export function RegistroForm({ editId }: { editId?: string }) {
   const now = useNow();
   const fix = useGeolocation();
   const bundle = useBundleMeta();
   const plots = useLiveQuery(() => campoDb.plots.toArray(), [], []);
   const species = useLiveQuery(() => campoDb.species.toArray(), [], []);
-  const toastState = useToastMessage();
+  const navigate = useNavigate();
 
   const [plotNumber, setPlotNumber] = useState<number | null>(null);
   const [category, setCategory] = useState<CategoryKey>("la");
@@ -142,6 +118,40 @@ export function RegistroForm() {
   const [notes, setNotes] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Edición: solo registros que aún no se enviaron (por enviar o rechazados).
+  const editing = useLiveQuery(
+    async () => (editId ? ((await campoDb.records.get(editId)) ?? null) : undefined),
+    [editId],
+    undefined
+  );
+  const hydrated = useRef(false);
+  useEffect(() => {
+    if (!editing || editing.sent === 1 || hydrated.current) {
+      return;
+    }
+    hydrated.current = true;
+    codeTouched.current = true;
+    const text = (n: number | null | undefined) =>
+      n === null || n === undefined ? "" : String(n);
+    setPlotNumber(editing.plotNumber);
+    setCategory(editing.category);
+    setCode(editing.code);
+    setSpeciesId(editing.speciesId);
+    setStems(editing.stems.length > 0 ? editing.stems.map(String) : [""]);
+    setCrownMin(text(editing.crownMin));
+    setCrownMax(text(editing.crownMax));
+    setDac1(text(editing.dac1));
+    setDac2(text(editing.dac2));
+    setHMode(editing.heightMode);
+    setHDirect(editing.heightMode === "direct" ? text(editing.height) : "");
+    setDist(text(editing.clino?.distance));
+    setP0(text(editing.clino?.pctBase));
+    setP1(text(editing.clino?.pctTop));
+    setHealth(editing.health ?? null);
+    setPhoto(editing.photo);
+    setNotes(editing.notes);
+  }, [editing]);
 
   const { series } = CATEGORIES[category];
   const trees = useLiveQuery(
@@ -255,15 +265,31 @@ export function RegistroForm() {
   }, [suggested]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: solo al cambiar de parcela o de serie
   useEffect(() => {
+    if (editId) {
+      return;
+    }
     codeTouched.current = false;
     setCode(suggested);
   }, [plotNumber, series]);
 
-  const existing =
+  const selfKey =
+    editing && editing.sent !== 1
+      ? treeKey(
+          editing.plotNumber,
+          CATEGORIES[editing.category].series,
+          editing.code
+        )
+      : null;
+  const found =
     plotNumber === null || code === ""
       ? undefined
       : trees.find((t) => t.key === treeKey(plotNumber, series, code));
-  const isRemeasure = Boolean(existing && !existing.local);
+  // El árbol de este mismo registro no cuenta como repetido.
+  const isSelf = Boolean(selfKey && found?.key === selfKey);
+  const existing = isSelf ? undefined : found;
+  const isRemeasure = isSelf
+    ? Boolean(editing?.isRemeasure)
+    : Boolean(existing && !existing.local);
   const duplicate = Boolean(existing?.local);
 
   const nums = stems
@@ -369,32 +395,18 @@ export function RegistroForm() {
     return null;
   }
 
-  function resetForm() {
-    codeTouched.current = false;
-    setCode(suggested);
-    setStems([""]);
-    setCrownMin("");
-    setCrownMax("");
-    setDac1("");
-    setDac2("");
-    setHDirect("");
-    setHealth(null);
-    setPhoto(null);
-    setNotes("");
-  }
-
   async function doSave() {
     if (plotNumber === null || !sp) {
       return;
     }
     setSaving(true);
     try {
-      const measuredAt = new Date().toISOString();
+      const measuredAt = editing?.measuredAt ?? new Date().toISOString();
       const record: LocalRecord = {
-        accuracy: fix?.accuracy ?? null,
+        accuracy: editing ? editing.accuracy : (fix?.accuracy ?? null),
         alertTitles: alerts.map((a) => a.title),
         category,
-        clientId: newClientId(),
+        clientId: editing?.clientId ?? newClientId(),
         clino:
           hMode === "clino" &&
           clino.distance !== null &&
@@ -407,7 +419,7 @@ export function RegistroForm() {
               }
             : null,
         code,
-        createdAt: Date.now(),
+        createdAt: editing?.createdAt ?? Date.now(),
         crownMax: parseDecimal(crownMax),
         crownMin: parseDecimal(crownMin),
         dac1: parseDecimal(dac1),
@@ -418,8 +430,8 @@ export function RegistroForm() {
         height,
         heightMode: hMode,
         isRemeasure,
-        lat: fix?.lat ?? null,
-        lon: fix?.lon ?? null,
+        lat: editing ? editing.lat : (fix?.lat ?? null),
+        lon: editing ? editing.lon : (fix?.lon ?? null),
         measuredAt,
         notes: notes.trim(),
         photo,
@@ -434,7 +446,14 @@ export function RegistroForm() {
         campoDb.records,
         campoDb.trees,
         async () => {
-          await campoDb.records.add(record);
+          if (editing) {
+            await campoDb.records.put(record);
+            if (selfKey && selfKey !== treeKey(plotNumber, series, code)) {
+              await campoDb.trees.delete(selfKey);
+            }
+          } else {
+            await campoDb.records.add(record);
+          }
           await campoDb.trees.put({
             category,
             code,
@@ -450,12 +469,12 @@ export function RegistroForm() {
           });
         }
       );
-      toastState.show(
-        isRemeasure
-          ? `N° ${code} guardado como remedición (historial)`
-          : `N° ${code} guardado`
+      toast.success(
+        editing
+          ? `N° ${code}: cambios guardados`
+          : `N° ${code} guardado${isRemeasure ? " como remedición" : ""}`
       );
-      resetForm();
+      await navigate({ to: "/campo" });
     } catch (error) {
       const noSpace =
         error instanceof DOMException && error.name === "QuotaExceededError";
@@ -502,9 +521,30 @@ export function RegistroForm() {
   const noBundle = bundle === undefined || plots.length === 0;
   const photoRecommended = hasAlerts && !photo;
 
+  if (
+    editId &&
+    editing !== undefined &&
+    (editing === null || editing.sent === 1)
+  ) {
+    return (
+      <Shell fix={fix} now={now} title="Editar registro">
+        <div className="flex flex-col gap-3 p-4">
+          <p className="text-sm">
+            {editing === null
+              ? "No se encontró este registro en el equipo."
+              : "Este registro ya se envió y quedó bloqueado: no se puede editar."}
+          </p>
+          <Link className="font-semibold text-ink underline" to="/campo">
+            Volver al inicio
+          </Link>
+        </div>
+      </Shell>
+    );
+  }
+
   if (noBundle && bundle !== undefined) {
     return (
-      <Shell fix={fix} message="" now={now}>
+      <Shell fix={fix} now={now} title="Registrar árbol">
         <div className="flex flex-col gap-3 p-4">
           <p className="text-sm">
             Aún no tienes parcelas descargadas en este equipo.
@@ -521,7 +561,11 @@ export function RegistroForm() {
   }
 
   return (
-    <Shell fix={fix} message={toastState.message} now={now}>
+    <Shell
+      fix={fix}
+      now={now}
+      title={editing ? "Editar registro" : "Registrar árbol"}
+    >
       <div className="flex flex-1 flex-col gap-3.5 px-4 pt-3.5 pb-4">
         <StepHead n={1} title="¿Dónde estás?" />
         <Combobox
@@ -715,7 +759,7 @@ export function RegistroForm() {
           size="lg"
           variant="primary"
         >
-          {saving ? "Guardando…" : "Guardar"}
+          {saving ? "Guardando…" : (editing ? "Guardar cambios" : "Guardar")}
         </Button>
       </footer>
 
@@ -768,12 +812,12 @@ export function RegistroForm() {
 function Shell({
   now,
   fix,
-  message,
+  title,
   children,
 }: {
   now: Date;
   fix: { accuracy: number } | null;
-  message: string;
+  title: string;
   children: React.ReactNode;
 }) {
   return (
@@ -794,7 +838,7 @@ function Shell({
           <X aria-hidden="true" size={20} />
         </Link>
         <div className="flex flex-1 flex-col">
-          <strong className="text-lg">Registrar árbol</strong>
+          <strong className="text-lg">{title}</strong>
           <span className="font-medium text-[13px]">{shortClock(now)}</span>
         </div>
         <span className="flex items-center gap-1 font-semibold text-xs">
@@ -802,15 +846,6 @@ function Shell({
           {fix ? `±${Math.round(fix.accuracy)} m` : "sin GPS"}
         </span>
       </header>
-      {message ? (
-        <div
-          className="flex items-center gap-2 bg-ok-bg px-4 py-2.5 font-semibold text-ok-fg text-sm"
-          role="status"
-        >
-          <Check aria-hidden="true" size={16} />
-          {message}
-        </div>
-      ) : null}
       {children}
     </div>
   );

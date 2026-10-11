@@ -1,5 +1,6 @@
 import { CATEGORIES } from "@reto-11-tgi-ingenieria/domain/categories";
-import { Camera, TriangleAlert } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Camera, Pencil, TriangleAlert } from "lucide-react";
 
 import { Chip, type Tone } from "@/components/app/chip";
 import { fmtDateTime } from "@/lib/format";
@@ -14,8 +15,9 @@ const STATE_UI: Record<SentState, { label: string; tone: Tone }> = {
 /** Una fila de la lista de registros hechos en este equipo. */
 export function RecordRow({ record: r }: { record: LocalRecord }) {
   const ui = STATE_UI[r.sent];
-  return (
-    <li className="flex flex-col gap-2 rounded-lg bg-white p-3.5 shadow-[0_1px_4px_rgb(27_27_24/16%)]">
+  const editable = r.sent !== 1;
+  const content = (
+    <>
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col">
           <strong className="truncate text-base">
@@ -52,6 +54,26 @@ export function RecordRow({ record: r }: { record: LocalRecord }) {
       {r.sent === 2 && r.error ? (
         <span className="text-crit-fg text-sm">{r.error}</span>
       ) : null}
+      {editable ? (
+        <span className="flex items-center gap-1.5 font-semibold text-sm">
+          <Pencil aria-hidden="true" size={14} /> Toca para editar
+        </span>
+      ) : null}
+    </>
+  );
+  return (
+    <li className="rounded-lg bg-white shadow-[0_1px_4px_rgb(27_27_24/16%)]">
+      {editable ? (
+        <Link
+          className="flex flex-col gap-2 rounded-lg p-3.5 text-ink no-underline active:bg-sunken"
+          search={{ editar: r.clientId }}
+          to="/campo/registro"
+        >
+          {content}
+        </Link>
+      ) : (
+        <div className="flex flex-col gap-2 p-3.5">{content}</div>
+      )}
     </li>
   );
 }
