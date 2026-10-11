@@ -19,8 +19,8 @@ const THEMES: Record<Theme, { bar: string; btn: string; badge: string }> = {
     btn: "text-ink",
   },
   ok: {
-    badge: "bg-ok",
-    bar: "bg-primary text-white",
+    badge: "bg-primary",
+    bar: "bg-ok text-white",
     btn: "text-white",
   },
   syncing: {
@@ -86,9 +86,7 @@ export function StatusBar() {
 
   let theme: Theme = "ok";
   let text =
-    pending > 0
-      ? `Conectado · ${pending} sin enviar`
-      : "Conectado · todo enviado y bloqueado";
+    pending > 0 ? `Conectado · ${pending} sin enviar` : "Conectado";
   if (!online) {
     theme = "offline";
     text = `Sin conexión · ${pending} sin enviar`;
