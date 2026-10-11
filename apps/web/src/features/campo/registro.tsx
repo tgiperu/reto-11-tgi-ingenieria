@@ -51,7 +51,6 @@ import {
   HeightSection,
   PhotoSection,
   StemsSection,
-  StepHead,
 } from "./sections";
 import { StatusBar } from "./status-bar";
 
@@ -99,6 +98,7 @@ export function RegistroForm({ editId }: { editId?: string }) {
   const navigate = useNavigate();
 
   const [plotNumber, setPlotNumber] = useState<number | null>(null);
+  const [stratum, setStratum] = useState<string | null>(null);
   const [category, setCategory] = useState<CategoryKey>("la");
   const [code, setCode] = useState("");
   const codeTouched = useRef(false);
@@ -177,7 +177,10 @@ export function RegistroForm({ editId }: { editId?: string }) {
 
   // Parcelas ordenadas por cercanía cuando hay GPS.
   const plotItems = useMemo<ComboItem<number>[]>(() => {
-    const withDistance = plots.map((p) => ({
+    const inStratum = plots.filter(
+      (p) => stratum === null || p.stratum === stratum
+    );
+    const withDistance = inStratum.map((p) => ({
       d:
         fix && p.lat !== null && p.lon !== null
           ? distanceMeters(fix, { lat: p.lat, lon: p.lon })
@@ -208,7 +211,7 @@ export function RegistroForm({ editId }: { editId?: string }) {
         sub,
       };
     });
-  }, [plots, fix]);
+  }, [plots, fix, stratum]);
 
   useEffect(() => {
     if (plotNumber === null) {
@@ -248,6 +251,38 @@ export function RegistroForm({ editId }: { editId?: string }) {
   );
 
   const plot = plots.find((p) => p.number === plotNumber) ?? null;
+
+  const stratumItems = useMemo<ComboItem<string>[]>(() => {
+    const open = new Map<string, number>();
+    for (const p of plots) {
+      open.set(p.stratum, (open.get(p.stratum) ?? 0) + (p.closed ? 0 : 1));
+    }
+    return [...open.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, count]) => ({
+        hint: plural(count, "abierta", "abiertas"),
+        id: name,
+        label: name,
+        name,
+        sub: count === 0 ? "todas enviadas" : undefined,
+      }));
+  }, [plots]);
+
+  // El estrato arranca con el de la parcela elegida y, al cambiarlo, la parcela pasa
+  // a la primera abierta de ese estrato (la más cercana si hay GPS).
+  useEffect(() => {
+    if (stratum === null) {
+      if (plot) {
+        setStratum(plot.stratum);
+      }
+      return;
+    }
+    if (plot?.stratum === stratum) {
+      return;
+    }
+    const first = plotItems.find((i) => !i.disabled);
+    setPlotNumber(first ? first.id : null);
+  }, [stratum, plot, plotItems]);
   const sp = species.find((s) => s.id === speciesId) ?? null;
   const nnSpecies = species.find((s) => s.isNN) ?? null;
 
@@ -567,7 +602,14 @@ export function RegistroForm({ editId }: { editId?: string }) {
       title={editing ? "Editar registro" : "Registrar árbol"}
     >
       <div className="flex flex-1 flex-col gap-3.5 px-4 pt-3.5 pb-4">
-        <StepHead n={1} title="¿Dónde estás?" />
+        <Combobox
+          headline={(n) => plural(n, "estrato", "estratos")}
+          items={stratumItems}
+          label="Estrato"
+          onPick={setStratum}
+          placeholder="Buscar estrato"
+          selected={stratum}
+        />
         <Combobox
           headline={(n, all) =>
             `${all ? "Tus parcelas asignadas, la más cercana primero · " : ""}${plural(n, "resultado", "resultados")}`
@@ -606,7 +648,6 @@ export function RegistroForm({ editId }: { editId?: string }) {
           selected={category}
         />
 
-        <StepHead n={2} title="¿Qué árbol es?" />
         <div className="flex flex-col gap-1.5">
           <label
             className="font-semibold text-[13px] text-ink-2"
@@ -678,7 +719,6 @@ export function RegistroForm({ editId }: { editId?: string }) {
           selected={speciesId}
         />
 
-        <StepHead n={3} title="Medidas" />
         {isTreeCategory(category) ? (
           <StemsSection code={code} eq={eq} onChange={setStems} stems={stems} />
         ) : null}
@@ -725,7 +765,6 @@ export function RegistroForm({ editId }: { editId?: string }) {
           value={health}
         />
 
-        <StepHead n={4} title="Cierre" />
         <PhotoSection
           hint={
             photoRecommended ? "Recomendada por la alerta" : "Opcional · 1 foto"

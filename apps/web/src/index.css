@@ -104,10 +104,13 @@ table {
   background: var(--sec);
 }
 
-:focus-visible {
-  outline: 3px solid var(--color-primary);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 5px #ffffff;
+/* En la capa base para que las utilidades (`outline-none`, `focus-visible:shadow-none`) puedan anularlo. */
+@layer base {
+  :focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 5px #ffffff;
+  }
 }
 
 /* Barras de desplazamiento de las listas y tablas. */

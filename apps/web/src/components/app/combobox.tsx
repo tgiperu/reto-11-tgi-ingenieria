@@ -96,7 +96,7 @@ export function Combobox<T extends string | number>({
           aria-controls={listId}
           aria-expanded={open}
           autoComplete="off"
-          className="min-w-0 flex-1 border-0 bg-transparent font-semibold text-base text-ink outline-none"
+          className="min-w-0 flex-1 border-0 bg-transparent font-semibold text-base text-ink outline-none focus-visible:shadow-none"
           disabled={disabled}
           id={id}
           onChange={(e) => {
@@ -114,7 +114,7 @@ export function Combobox<T extends string | number>({
         />
         <button
           aria-label={open ? "Cerrar lista" : "Abrir lista"}
-          className="flex size-10 cursor-pointer items-center justify-center rounded-lg border-0 bg-sunken"
+          className="flex size-10 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-ink-3 hover:text-ink"
           disabled={disabled}
           onClick={() => (open ? close() : setOpen(true))}
           type="button"

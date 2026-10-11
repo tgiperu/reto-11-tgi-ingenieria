@@ -12,21 +12,6 @@ import { Button } from "@/components/app/button";
 const INPUT =
   "min-h-12 w-full rounded-md border border-field bg-white px-3 font-mono text-base text-ink focus-visible:border-primary";
 
-/** Cabecera de paso del formulario: numera el orden en que se llena. */
-export function StepHead({ n, title }: { n: number; title: string }) {
-  return (
-    <h2 className="mt-1 flex items-center gap-2.5 border-line border-b pb-1.5 font-bold text-ink text-sm first:mt-0">
-      <span
-        aria-hidden="true"
-        className="flex size-6 items-center justify-center rounded-[4px] bg-sec font-mono text-[13px] text-sec-ink"
-      >
-        {n}
-      </span>
-      {title}
-    </h2>
-  );
-}
-
 export function Section({
   title,
   aside,
