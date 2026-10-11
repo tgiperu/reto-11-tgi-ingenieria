@@ -7,6 +7,13 @@ import { fmtDateTime, fmtNum } from "@/lib/format";
 import { downloadWorkbook, type SheetData } from "@/lib/xlsx";
 
 export interface ExportData {
+  plots: {
+    aerial: number;
+    number: number;
+    root: number;
+    stratum: string;
+    total: number;
+  }[];
   outliers: {
     brigade: string | null;
     code: string;
@@ -41,6 +48,7 @@ export interface ExportData {
 
 export interface ExportSummary {
   fileName: string;
+  plots: number;
   rowsAlt: number;
   rowsDap: number;
   species: number;
@@ -142,11 +150,41 @@ export async function exportOutliers(
     name: "Atípicos altura",
     rows: altRows,
   };
+  const round2 = (v: number) => Number(v.toFixed(2));
+  const carbonSheet: SheetData = {
+    headers: [
+      "Parcela",
+      "Suma de Reservorio aereo (tC/ha)",
+      "Suma de Reservorio subterraneo (tC/ha)",
+      "Suma de Reservorio total (tC/ha)",
+      "Estrato",
+    ],
+    name: "Carbono x parcela",
+    rows: data.plots.map((p) => [
+      p.number,
+      round2(p.aerial),
+      round2(p.root),
+      round2(p.total),
+      p.stratum,
+    ]),
+    table: {
+      total: {
+        column: 4,
+        value: round2(data.plots.reduce((sum, p) => sum + p.total, 0)),
+      },
+    },
+  };
   const slug = speciesFilter ? `${speciesFilter.replace(/\s+/g, "-")}_` : "";
   const fileName = `validacion_atipicos_${slug}${todayLima()}.xlsx`;
-  await downloadWorkbook(fileName, [summary, dapSheet, altSheet]);
+  await downloadWorkbook(fileName, [
+    summary,
+    dapSheet,
+    altSheet,
+    carbonSheet,
+  ]);
   return {
     fileName,
+    plots: data.plots.length,
     rowsAlt: altRows.length,
     rowsDap: dapRows.length,
     species: data.species.length,

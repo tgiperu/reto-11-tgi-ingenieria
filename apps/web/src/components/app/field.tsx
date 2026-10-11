@@ -8,7 +8,7 @@ import {
 } from "react";
 
 const CONTROL =
-  "min-h-11 w-full rounded-lg border border-edge bg-white px-3 text-sm text-ink placeholder:text-ink-3/70 focus-visible:border-primary";
+  "min-h-11 w-full rounded-lg border border-edge bg-white px-3 text-sm text-ink placeholder:text-ink-3/70";
 
 export function TextField({
   label,

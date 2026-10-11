@@ -398,6 +398,7 @@ export const plotsRouter = router({
       const rows = await db
         .select({
           brigadeId: plot.brigadeId,
+          createdAt: plot.createdAt,
           leader: brigade.leaderName,
           number: plot.number,
           sampleDate: plot.sampleDate,
@@ -410,6 +411,17 @@ export const plotsRouter = router({
         .leftJoin(brigade, eq(brigade.id, plot.brigadeId))
         .orderBy(desc(plot.number));
       const aggregates = await plotAggregates(db);
+      // Primero las parcelas con actividad más reciente (registros sincronizados o creadas hace poco).
+      const lastSync = new Map(
+        (
+          await db.execute<{ at: string; plot_number: number }>(
+            sql`SELECT plot_number, max(synced_at) AS at FROM measurement GROUP BY plot_number`
+          )
+        ).rows.map((r) => [r.plot_number, new Date(r.at).getTime()])
+      );
+      const activity = (r: (typeof rows)[number]) =>
+        Math.max(lastSync.get(r.number) ?? 0, r.createdAt.getTime());
+      rows.sort((a, b) => activity(b) - activity(a) || b.number - a.number);
       const q = normalizeKey(input.search ?? "");
       const all = rows
         .filter(
@@ -590,7 +602,7 @@ export const plotsRouter = router({
             AND (${input.category} IN ('ar', 'br') OR m.category = ${input.category})
           ORDER BY t.id, m.measured_at DESC
         ) x
-        ORDER BY (x.code)::int
+        ORDER BY x.measured_at DESC, (x.code)::int
         LIMIT ${MAX_RECORDS_PAGE} OFFSET ${input.offset}
       `);
       const [{ n } = { n: 0 }] = (

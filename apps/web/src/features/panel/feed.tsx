@@ -120,7 +120,7 @@ export function Feed({
   count: number;
   onAccept: (id: string) => void;
   onRemeasure: (id: string) => void;
-  onPhoto: (id: string) => void;
+  onPhoto: (item: FeedItem) => void;
   busy: boolean;
   page: number;
   pageSize: number;
@@ -249,7 +249,7 @@ export function Feed({
                     <button
                       aria-label={`Ver evidencia de N° ${item.code}`}
                       className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 font-semibold text-[13px] text-ink-2 hover:text-ink hover:underline"
-                      onClick={() => onPhoto(item.measurementId)}
+                      onClick={() => onPhoto(item)}
                       title="Ver evidencia"
                       type="button"
                     >

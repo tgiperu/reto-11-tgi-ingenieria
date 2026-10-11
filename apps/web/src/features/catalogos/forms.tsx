@@ -3,7 +3,7 @@ import {
   type Equations,
 } from "@reto-11-tgi-ingenieria/domain/carbon";
 import { parseDecimal } from "@reto-11-tgi-ingenieria/domain/measure";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -127,9 +127,19 @@ export function BrigadeModal({
   onClose: () => void;
 }) {
   const [id, setId] = useState(value?.id ?? "");
-  const [leader, setLeader] = useState(value?.leaderName ?? "");
+  const [leaderUserId, setLeaderUserId] = useState("");
   const [members, setMembers] = useState((value?.members ?? []).join(", "));
   const [devices, setDevices] = useState(String(value?.devices ?? 0));
+  const isNew = !value?.id;
+  const candidates = useQuery({
+    ...trpc.access.users.available.queryOptions({
+      brigadeId: value?.id ?? null,
+    }),
+    enabled: value !== null,
+  });
+  // Al editar, el jefe actual aparece preseleccionado.
+  const current = candidates.data?.find((u) => u.name === value?.leaderName);
+  const leaderValue = leaderUserId || current?.id || "";
   const done = useDone(
     value?.id ? "Brigada actualizada" : "Brigada creada",
     onClose
@@ -144,8 +154,7 @@ export function BrigadeModal({
     .split(",")
     .map((m) => m.trim())
     .filter(Boolean);
-  const valid =
-    leader.trim().length >= 2 && (value?.id || id.trim().length >= 2);
+  const valid = leaderValue !== "" && (value?.id || id.trim().length >= 2);
   return (
     <Modal
       footer={
@@ -158,12 +167,12 @@ export function BrigadeModal({
                 ? update.mutate({
                     devices: Number.parseInt(devices, 10) || 0,
                     id: value.id,
-                    leaderName: leader.trim(),
+                    leaderUserId: leaderValue,
                     members: list,
                   })
                 : create.mutate({
                     id: id.trim(),
-                    leaderName: leader.trim(),
+                    leaderUserId: leaderValue,
                     members: list,
                   })
             }
@@ -177,7 +186,7 @@ export function BrigadeModal({
       open={value !== null}
       title={value?.id ? `Editar ${value.id}` : "Nueva brigada"}
     >
-      {value?.id ? null : (
+      {isNew ? (
         <TextField
           label="Código"
           mono
@@ -185,12 +194,28 @@ export function BrigadeModal({
           placeholder="BR-04"
           value={id}
         />
-      )}
-      <TextField
+      ) : null}
+      <SelectField
         label="Jefe de brigada"
-        onChange={(e) => setLeader(e.target.value)}
-        value={leader}
-      />
+        onChange={(e) => setLeaderUserId(e.target.value)}
+        value={leaderValue}
+      >
+        <option value="">Selecciona un usuario…</option>
+        {candidates.data?.map((u) => (
+          <option key={u.id} value={u.id}>
+            {u.name} · {u.email}
+          </option>
+        ))}
+      </SelectField>
+      {candidates.data?.length === 0 ? (
+        <p className="text-ink-3 text-xs">
+          No hay usuarios sin brigada. Crea uno nuevo en la página Usuarios.
+        </p>
+      ) : (
+        <p className="text-ink-3 text-xs">
+          Solo aparecen usuarios registrados que aún no tienen brigada.
+        </p>
+      )}
       <TextField
         label="Materos (separados por coma)"
         onChange={(e) => setMembers(e.target.value)}

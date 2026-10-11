@@ -17,7 +17,7 @@ import {
 } from "@/components/app/help-tip";
 
 const INPUT =
-  "min-h-12 w-full rounded-md border border-field bg-white px-3 font-mono text-base text-ink focus-visible:border-primary";
+  "min-h-12 w-full rounded-md border border-field bg-white px-3 font-mono text-base text-ink";
 
 export function Section({
   title,

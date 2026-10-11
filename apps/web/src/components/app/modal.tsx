@@ -37,7 +37,7 @@ export function Modal({
   return (
     <dialog
       aria-labelledby="modal-title"
-      className={`m-auto ${{ lg: "w-[min(780px,calc(100vw-32px))]", md: "w-[min(520px,calc(100vw-32px))]", xl: "w-[min(1200px,calc(100vw-32px))]" }[size]} rounded-lg border border-line bg-white p-0 text-ink shadow-[6px_0_0_rgb(27_27_24/18%)]`}
+      className={`m-auto ${{ lg: "w-[min(780px,calc(100vw-32px))]", md: "w-[min(520px,calc(100vw-32px))]", xl: "w-[min(1440px,calc(100vw-32px))]" }[size]} rounded-lg border border-line bg-white p-0 text-ink shadow-[6px_0_0_rgb(27_27_24/18%)]`}
       onClose={onClose}
       ref={ref}
     >

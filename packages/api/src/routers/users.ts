@@ -8,7 +8,7 @@ import {
 } from "@reto-11-tgi-ingenieria/domain/constants";
 import { normalizeKey, tidy } from "@reto-11-tgi-ingenieria/domain/names";
 import { TRPCError } from "@trpc/server";
-import { eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { adminProcedure, router } from "../index";
@@ -122,6 +122,7 @@ const rolesRouter = router({
       .map((r) => ({
         access: r.access as Role,
         accessLabel: ROLE_LABELS[r.access as Role] ?? r.access,
+        createdAt: r.createdAt.getTime(),
         id: r.id,
         name: r.name,
         system: r.system,
@@ -129,7 +130,7 @@ const rolesRouter = router({
       }))
       .sort(
         (a, b) =>
-          Number(b.system) - Number(a.system) || a.name.localeCompare(b.name)
+          Number(b.system) - Number(a.system) || b.createdAt - a.createdAt
       );
   }),
 
@@ -178,6 +179,28 @@ const rolesRouter = router({
 });
 
 const usersRouter = router({
+  /** Usuarios sin brigada (más los de la brigada indicada): candidatos a jefe de brigada. */
+  available: adminProcedure
+    .input(z.object({ brigadeId: z.string().nullable() }))
+    .query(async ({ ctx, input }) => {
+      const rows = await ctx.db
+        .select({
+          brigadeId: user.brigadeId,
+          email: user.email,
+          id: user.id,
+          name: user.name,
+        })
+        .from(user)
+        .orderBy(user.name);
+      return rows
+        .filter(
+          (r) =>
+            r.brigadeId === null ||
+            (input.brigadeId !== null && r.brigadeId === input.brigadeId)
+        )
+        .map((r) => ({ email: r.email, id: r.id, name: r.name }));
+    }),
+
   create: adminProcedure
     .input(
       z.object({
@@ -241,7 +264,7 @@ const usersRouter = router({
       .from(user)
       .leftJoin(brigade, eq(brigade.id, user.brigadeId))
       .leftJoin(appRole, eq(appRole.id, user.roleId))
-      .orderBy(user.name);
+      .orderBy(desc(user.createdAt), user.name);
     return rows.map((r) => ({
       access: r.access as Role,
       brigadeId: r.brigadeId,

@@ -23,6 +23,7 @@ import {
   type CorrectableRecord,
   CorrectModal,
   PhotoModal,
+  type PhotoTarget,
   ReasonModal,
 } from "./modals";
 
@@ -111,12 +112,12 @@ function PhotoCell({
   onPhoto,
 }: {
   row: RecordRow;
-  onPhoto: (id: string) => void;
+  onPhoto: (row: RecordRow) => void;
 }) {
   return row.hasPhoto ? (
     <Button
       aria-label={`Ver foto de N° ${row.code}`}
-      onClick={() => onPhoto(row.id)}
+      onClick={() => onPhoto(row)}
       size="sm"
     >
       <Camera aria-hidden="true" size={14} /> Ver
@@ -136,12 +137,12 @@ function RecordsTable({
   category: CategoryKey;
   rows: RecordRow[];
   editable: boolean;
-  onPhoto: (id: string) => void;
+  onPhoto: (row: RecordRow) => void;
   onCorrect: (row: RecordRow) => void;
 }) {
   const isTree = category === "la" || category === "fu";
   return (
-    <Table minWidth={760}>
+    <Table minWidth={1040}>
       <thead>
         <tr>
           <Th>Código</Th>
@@ -331,7 +332,7 @@ export function PlotRecords({ plot, role }: { plot: number; role: Role }) {
   const [category, setCategory] = useState<CategoryKey>("la");
   const detail = useQuery(trpc.plots.get.queryOptions({ plot }));
   const { rows, page, loadMore } = usePlotRecords(plot, category);
-  const [photoId, setPhotoId] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<PhotoTarget | null>(null);
   const [correcting, setCorrecting] = useState<CorrectableRecord | null>(null);
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
@@ -437,7 +438,14 @@ export function PlotRecords({ plot, role }: { plot: number; role: Role }) {
           category={category}
           editable={unlocked && isAdmin}
           onCorrect={setCorrecting}
-          onPhoto={setPhotoId}
+          onPhoto={(r) =>
+            setPhoto({
+              at: r.measuredAt,
+              id: r.id,
+              plot,
+              species: r.speciesName ?? "Sin especie",
+            })
+          }
           rows={rows}
         />
         <div className="flex flex-wrap items-center justify-between gap-2 border-line-2 border-t px-4 py-2.5 text-ink-3 text-xs">
@@ -455,7 +463,7 @@ export function PlotRecords({ plot, role }: { plot: number; role: Role }) {
         </div>
       </div>
       <AuditAside plot={plot} />
-      <PhotoModal id={photoId} onClose={() => setPhotoId(null)} />
+      <PhotoModal onClose={() => setPhoto(null)} target={photo} />
       <CorrectModal
         key={correcting?.id ?? "none"}
         onClose={() => setCorrecting(null)}

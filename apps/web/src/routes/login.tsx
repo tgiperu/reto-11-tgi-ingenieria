@@ -22,7 +22,7 @@ export const Route = createFileRoute("/login")({
 });
 
 const FIELD =
-  "min-h-12 w-full rounded-md border border-edge bg-white px-3.5 text-base text-ink placeholder:text-ink-3/70 focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-primary/30";
+  "min-h-12 w-full rounded-md border border-edge bg-white px-3.5 text-base text-ink placeholder:text-ink-3/70";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -121,7 +121,11 @@ function LoginPage() {
               className="flex items-start gap-2.5 rounded-lg border border-warn-edge bg-warn-bg px-3.5 py-3 text-sm text-warn-fg"
               role="status"
             >
-              <WifiOff aria-hidden="true" className="mt-0.5 flex-none" size={18} />
+              <WifiOff
+                aria-hidden="true"
+                className="mt-0.5 flex-none"
+                size={18}
+              />
               <span>
                 <strong>Sin conexión.</strong> Necesitas señal para iniciar
                 sesión.
