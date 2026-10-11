@@ -89,3 +89,30 @@ export function deriveMetrics(input: MetricsInput): Metrics {
     dapEq: valid.length > 0 ? equivalentDiameter(valid) : null,
   };
 }
+
+/** Tope duro de una altura de árbol: por encima es casi seguro un error de digitación. */
+export const MAX_HEIGHT_M = 50;
+
+/** Mensaje si la altura no es válida (≤ 0 o sobre el tope), `null` si está bien o vacía. */
+export function heightError(height: number | null): string | null {
+  if (height === null) {
+    return null;
+  }
+  if (height <= 0) {
+    return "La altura debe ser mayor que 0 m.";
+  }
+  if (height > MAX_HEIGHT_M) {
+    return `La altura no puede superar ${MAX_HEIGHT_M} m: revisa el valor.`;
+  }
+  return null;
+}
+
+/** Deja solo dígitos y un separador decimal (sin signo): para campos que nunca son negativos. */
+export function sanitizePositiveDecimal(value: string): string {
+  const cleaned = value.replace(/[^0-9.,]/g, "");
+  const first = cleaned.search(/[.,]/);
+  if (first === -1) {
+    return cleaned;
+  }
+  return `${cleaned.slice(0, first + 1)}${cleaned.slice(first + 1).replace(/[.,]/g, "")}`;
+}

@@ -5,7 +5,13 @@ import { categoryFactor } from "./categories";
 import { distanceMeters, utmToLatLon } from "./geo";
 import { healthRequired, parseHealth } from "./health";
 import { autoMap, buildImportPreview } from "./import";
-import { clinometerHeight, equivalentDiameter } from "./measure";
+import {
+  clinometerHeight,
+  equivalentDiameter,
+  heightError,
+  MAX_HEIGHT_M,
+  sanitizePositiveDecimal,
+} from "./measure";
 import { groupVariants, normalizeTime } from "./names";
 import {
   defaultRuleSettings,
@@ -190,5 +196,28 @@ describe("estado sanitario", () => {
   it("no se exige en brinzales", () => {
     expect(healthRequired("br")).toBe(false);
     expect(healthRequired("fu")).toBe(true);
+  });
+});
+
+describe("validación de altura", () => {
+  it("acepta alturas dentro del rango y vacías", () => {
+    expect(heightError(null)).toBeNull();
+    expect(heightError(8.2)).toBeNull();
+    expect(heightError(MAX_HEIGHT_M)).toBeNull();
+  });
+
+  it("rechaza cero, negativas y valores enormes", () => {
+    expect(heightError(0)).not.toBeNull();
+    expect(heightError(-3)).not.toBeNull();
+    expect(heightError(MAX_HEIGHT_M + 0.1)).not.toBeNull();
+    expect(heightError(9999)).not.toBeNull();
+  });
+
+  it("limpia el texto de un número positivo", () => {
+    expect(sanitizePositiveDecimal("-12")).toBe("12");
+    expect(sanitizePositiveDecimal("8,2")).toBe("8,2");
+    expect(sanitizePositiveDecimal("8.2.5")).toBe("8.25");
+    expect(sanitizePositiveDecimal("1e5")).toBe("15");
+    expect(sanitizePositiveDecimal("abc")).toBe("");
   });
 });

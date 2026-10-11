@@ -15,6 +15,7 @@ import {
 import {
   clinometerHeight,
   deriveMetrics,
+  heightError,
   nextFreeCode,
   parseDecimal,
 } from "@reto-11-tgi-ingenieria/domain/measure";
@@ -162,18 +163,6 @@ export function RegistroForm({ editId }: { editId?: string }) {
         : campoDb.trees.where("plot").equals(plotNumber).toArray(),
     [plotNumber],
     [] as LocalTree[]
-  );
-  const pendingInPlot = useLiveQuery(
-    () =>
-      plotNumber === null
-        ? 0
-        : campoDb.records
-            .where("plotNumber")
-            .equals(plotNumber)
-            .and((r) => r.sent === 0)
-            .count(),
-    [plotNumber],
-    0
   );
 
   // Parcelas ordenadas por cercanía cuando hay GPS.
@@ -349,6 +338,7 @@ export function RegistroForm({ editId }: { editId?: string }) {
       ? clinometerHeight(clino.distance, clino.pctBase, clino.pctTop)
       : null;
   const height = hMode === "direct" ? parseDecimal(hDirect) : clinoHeight;
+  const heightIssue = category === "br" ? null : heightError(height);
   const gpsDistance =
     fix && plot && plot.lat !== null && plot.lon !== null
       ? distanceMeters(fix, { lat: plot.lat, lon: plot.lon })
@@ -425,6 +415,9 @@ export function RegistroForm({ editId }: { editId?: string }) {
     }
     if (category === "br" && metrics.dacAvg === null) {
       return "Falta la lectura de DAC";
+    }
+    if (heightIssue) {
+      return heightIssue;
     }
     if (health === null && healthRequired(category)) {
       return "Elige el estado sanitario";
@@ -551,10 +544,6 @@ export function RegistroForm({ editId }: { editId?: string }) {
     metrics.crownAvg === null ? "—" : metrics.crownAvg.toFixed(2);
   const dacAvg = metrics.dacAvg === null ? "—" : metrics.dacAvg.toFixed(2);
   const eq = metrics.dapEq === null ? "0.00" : metrics.dapEq.toFixed(2);
-  const sendText =
-    pendingInPlot > 0
-      ? `P-${plotNumber} · pendiente de envío · ${plural(pendingInPlot, "registro", "registros")}`
-      : `P-${plotNumber} · sin registros por enviar`;
   const noBundle = bundle === undefined || plots.length === 0;
   const photoRecommended = hasAlerts && !photo;
 
@@ -623,23 +612,6 @@ export function RegistroForm({ editId }: { editId?: string }) {
           placeholder="Buscar N° o sector"
           selected={plotNumber}
         />
-        <div
-          className={cn(
-            "-mt-1.5 flex items-center gap-2 rounded-lg px-2.5 py-1.5 font-semibold text-[13px]",
-            pendingInPlot > 0
-              ? "bg-warn-bg text-warn-fg"
-              : "bg-sunken text-ink-2"
-          )}
-          role="status"
-        >
-          <span
-            className={cn(
-              "size-2 flex-none rounded-full",
-              pendingInPlot > 0 ? "bg-warn-deep" : "bg-field"
-            )}
-          />
-          <span className="flex-1">{sendText}</span>
-        </div>
         <Combobox
           headline={(n) => plural(n, "categoría", "categorías")}
           hint={`${CATEGORIES[category].criterion} · subparcela r ${CATEGORIES[category].radiusM} m`}
@@ -748,6 +720,7 @@ export function RegistroForm({ editId }: { editId?: string }) {
         {category === "br" ? null : (
           <HeightSection
             computed={clinoHeight === null ? "—" : clinoHeight.toFixed(2)}
+            error={heightIssue}
             direct={hDirect}
             dist={dist}
             mode={hMode}
