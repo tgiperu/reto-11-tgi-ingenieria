@@ -328,6 +328,13 @@ export interface EvalInput {
 
 const MIN_LATIZAL_HEIGHT_M = 1.5;
 const MIN_SEEDLING_DAC_CM = 0.4;
+const GPS_KM_THRESHOLD_M = 5000;
+
+function gpsDistanceText(meters: number): string {
+  return meters > GPS_KM_THRESHOLD_M
+    ? `${(meters / 1000).toFixed(1)} km`
+    : `${Math.round(meters)} m`;
+}
 
 type Lookup = (key: RuleKey) => { active: boolean; param: number | null };
 
@@ -535,7 +542,7 @@ export function evaluateMeasurement(
         "gps",
         "warning",
         "Estás lejos de la parcela",
-        `El equipo está a ${Math.round(input.gpsDistanceM)} m del centro de la parcela seleccionada.`
+        `El equipo está a ${gpsDistanceText(input.gpsDistanceM)} del centro de la parcela seleccionada.`
       )
     );
   }
