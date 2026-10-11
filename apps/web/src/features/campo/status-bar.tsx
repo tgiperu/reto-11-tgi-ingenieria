@@ -14,17 +14,17 @@ type Theme = "offline" | "syncing" | "ok";
 
 const THEMES: Record<Theme, { bar: string; btn: string; badge: string }> = {
   offline: {
-    badge: "bg-crit",
+    badge: "bg-crit text-white",
     bar: "bg-warn text-ink",
     btn: "text-ink",
   },
   ok: {
-    badge: "bg-primary",
-    bar: "bg-ok text-white",
+    badge: "bg-signal text-primary",
+    bar: "bg-black text-signal",
     btn: "text-white",
   },
   syncing: {
-    badge: "bg-info",
+    badge: "bg-white text-primary",
     bar: "bg-info text-white",
     btn: "text-white",
   },
@@ -85,8 +85,7 @@ export function StatusBar() {
   const [note, setNote] = useState("");
 
   let theme: Theme = "ok";
-  let text =
-    pending > 0 ? `Conectado · ${pending} sin enviar` : "Conectado";
+  let text = "Conectado";
   if (!online) {
     theme = "offline";
     text = `Sin conexión · ${pending} sin enviar`;
@@ -173,7 +172,7 @@ export function StatusBar() {
         {pending > 0 ? (
           <span
             className={cn(
-              "absolute top-0.5 right-0 min-w-[22px] rounded-[4px] px-1.5 py-px text-center font-bold text-white text-xs",
+              "absolute top-0.5 right-0 min-w-[22px] rounded-[4px] px-1.5 py-px text-center font-bold text-xs",
               t.badge
             )}
           >
