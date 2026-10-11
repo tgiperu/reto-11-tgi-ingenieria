@@ -43,12 +43,8 @@ import {
   getPublishedRules,
 } from "../lib/settings";
 
-const CLOSED_FOR_FIELD: readonly PlotStatus[] = [
-  "review",
-  "alert",
-  "locked",
-  "unlocked",
-];
+/** Igual que al recibir registros: solo una parcela cerrada por el supervisor deja de aceptar árboles. */
+const CLOSED_FOR_FIELD: readonly PlotStatus[] = ["locked", "unlocked"];
 const PHOTO_INSERT_CHUNK = 4;
 
 // biome-ignore lint/style/useConsistentTypeDefinitions: db.execute exige tipos con firma de índice implícita

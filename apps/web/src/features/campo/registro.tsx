@@ -196,11 +196,12 @@ export function RegistroForm({ editId }: { editId?: string }) {
     const nearest = withDistance.find((x) => !x.p.closed && x.d !== null)?.p
       .number;
     return withDistance.map(({ p, d }) => {
-      let sub = d === null ? p.stratum : `a ${formatDistance(d)}`;
+      let sub: string | undefined =
+        d === null ? undefined : `a ${formatDistance(d)}`;
       if (p.closed) {
-        sub = "enviada · bloqueada";
+        sub = "cerrada por el supervisor";
       } else if (p.number === nearest) {
-        sub = `${sub} · la más cercana`;
+        sub = sub ? `${sub} · la más cercana` : "la más cercana";
       }
       return {
         disabled: p.closed,
@@ -579,7 +580,7 @@ export function RegistroForm({ editId }: { editId?: string }) {
 
   if (noBundle && bundle !== undefined) {
     return (
-      <Shell fix={fix} now={now} title="Registrar árbol">
+      <Shell fix={fix} now={now} title="Ficha de registro">
         <div className="flex flex-col gap-3 p-4">
           <p className="text-sm">
             Aún no tienes parcelas descargadas en este equipo.
@@ -599,7 +600,7 @@ export function RegistroForm({ editId }: { editId?: string }) {
     <Shell
       fix={fix}
       now={now}
-      title={editing ? "Editar registro" : "Registrar árbol"}
+      title={editing ? "Editar registro" : "Ficha de registro"}
     >
       <div className="flex flex-1 flex-col gap-3.5 px-4 pt-3.5 pb-4">
         <Combobox
