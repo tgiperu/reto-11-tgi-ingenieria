@@ -1,9 +1,12 @@
 import { trpcServer } from "@hono/trpc-server";
 import { appRouter } from "@reto-11-tgi-ingenieria/api/routers/index";
 import { initLogger } from "evlog";
-import { createAuthMiddleware, type BetterAuthInstance } from "evlog/better-auth";
+import {
+  type BetterAuthInstance,
+  createAuthMiddleware,
+} from "evlog/better-auth";
 import { createFsDrain } from "evlog/fs";
-import { evlog, type EvlogVariables } from "evlog/hono";
+import { type EvlogVariables, evlog } from "evlog/hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
@@ -22,7 +25,11 @@ const identifyUser = createAuthMiddleware(auth as BetterAuthInstance, {
 
 const app = new Hono<EvlogVariables>();
 
-app.use(evlog({ drain: process.env.NODE_ENV === "production" ? undefined : createFsDrain() }));
+app.use(
+  evlog({
+    drain: process.env.NODE_ENV === "production" ? undefined : createFsDrain(),
+  })
+);
 app.use("*", async (c, next) => {
   await identifyUser(c.get("log"), c.req.raw.headers, c.req.path);
   await next();
@@ -31,28 +38,24 @@ app.use("*", async (c, next) => {
 app.use(
   "/*",
   cors({
-    origin: ENV.CORS_ORIGIN.split(",").map((o) => o.trim()),
-    allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
+    allowMethods: ["GET", "POST", "OPTIONS"],
     credentials: true,
-  }),
+    origin: ENV.CORS_ORIGIN.split(",").map((o) => o.trim()),
+  })
 );
 
 app.on(["POST", "GET"], "/api/auth/*", async (c) => auth.handler(c.req.raw));
 
 app.use(
-  "/trpc/*",
+  "/api/trpc/*",
   trpcServer({
-    endpoint: "/trpc",
+    createContext: (_opts, context) => createContext({ context }),
+    endpoint: "/api/trpc",
     router: appRouter,
-    createContext: (_opts, context) => {
-      return createContext({ context });
-    },
-  }),
+  })
 );
 
-app.get("/", (c) => {
-  return c.text("OK");
-});
+app.get("/", (c) => c.text("OK"));
 
 export default app;

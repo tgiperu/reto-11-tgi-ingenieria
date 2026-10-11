@@ -72,7 +72,7 @@ export default defineConfig({
   },
   server: {
     host: true,
-    port: 3001,
+    port: Number(process.env.PORT) || 3001,
   },
   worker: {
     format: "es",
