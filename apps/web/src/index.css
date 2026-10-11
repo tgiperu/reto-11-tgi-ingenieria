@@ -434,3 +434,14 @@ textarea:focus-visible {
   border-color: var(--color-field);
   box-shadow: none;
 }
+
+/* Datos que llegan: aparecen con un fundido corto en lugar de golpe. */
+.fade-in {
+  animation: mask-in 240ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation: none;
+  }
+}

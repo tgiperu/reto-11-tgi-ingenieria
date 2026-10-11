@@ -7,7 +7,7 @@ import {
 import { healthLabel } from "@reto-11-tgi-ingenieria/domain/health";
 import { average } from "@reto-11-tgi-ingenieria/domain/measure";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, Lock, LockOpen } from "lucide-react";
+import { Camera, Loader2, Lock, LockOpen } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -307,31 +307,43 @@ function AuditAside({ plot }: { plot: number }) {
 }
 
 function usePlotRecords(plot: number, category: CategoryKey) {
-  const [offset, setOffset] = useState(0);
-  const [rows, setRows] = useState<RecordRow[]>([]);
+  const key = `${plot}-${category}`;
+  const [offsets, setOffsets] = useState({ key, value: 0 });
+  const offset = offsets.key === key ? offsets.value : 0;
+  const [state, setState] = useState<{ key: string; rows: RecordRow[] }>({
+    key,
+    rows: [],
+  });
+  // Al cambiar de categoría no se muestran las filas de la anterior.
+  const rows = state.key === key ? state.rows : [];
   const page = useQuery(
     trpc.plots.records.queryOptions({ category, offset, plot })
   );
 
   useEffect(() => {
-    setOffset(0);
-    setRows([]);
-  }, []);
-  useEffect(() => {
     if (page.data) {
-      setRows((prev) =>
-        offset === 0 ? page.data.rows : [...prev, ...page.data.rows]
-      );
+      setState((prev) => ({
+        key,
+        rows:
+          offset === 0 || prev.key !== key
+            ? page.data.rows
+            : [...prev.rows, ...page.data.rows],
+      }));
     }
-  }, [page.data, offset]);
-  return { loadMore: () => setOffset(rows.length), page, rows };
+  }, [page.data, offset, key]);
+  return {
+    loadMore: () => setOffsets({ key, value: rows.length }),
+    loading: rows.length === 0 && page.isFetching,
+    page,
+    rows,
+  };
 }
 
 export function PlotRecords({ plot, role }: { plot: number; role: Role }) {
   const queryClient = useQueryClient();
   const [category, setCategory] = useState<CategoryKey>("la");
   const detail = useQuery(trpc.plots.get.queryOptions({ plot }));
-  const { rows, page, loadMore } = usePlotRecords(plot, category);
+  const { rows, page, loadMore, loading } = usePlotRecords(plot, category);
   const [photo, setPhoto] = useState<PhotoTarget | null>(null);
   const [correcting, setCorrecting] = useState<CorrectableRecord | null>(null);
   const [unlockOpen, setUnlockOpen] = useState(false);
@@ -434,20 +446,33 @@ export function PlotRecords({ plot, role }: { plot: number; role: Role }) {
             value={category}
           />
         </div>
-        <RecordsTable
-          category={category}
-          editable={unlocked && isAdmin}
-          onCorrect={setCorrecting}
-          onPhoto={(r) =>
-            setPhoto({
-              at: r.measuredAt,
-              id: r.id,
-              plot,
-              species: r.speciesName ?? "Sin especie",
-            })
-          }
-          rows={rows}
-        />
+        {loading ? (
+          <div
+            aria-live="polite"
+            className="flex min-h-[260px] items-center justify-center gap-2.5 text-ink-3 text-sm"
+            role="status"
+          >
+            <Loader2 aria-hidden="true" className="animate-spin" size={22} />
+            Cargando registros…
+          </div>
+        ) : (
+          <div className="fade-in" key={category}>
+            <RecordsTable
+              category={category}
+              editable={unlocked && isAdmin}
+              onCorrect={setCorrecting}
+              onPhoto={(r) =>
+                setPhoto({
+                  at: r.measuredAt,
+                  id: r.id,
+                  plot,
+                  species: r.speciesName ?? "Sin especie",
+                })
+              }
+              rows={rows}
+            />
+          </div>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-2 border-line-2 border-t px-4 py-2.5 text-ink-3 text-xs">
           <span>
             Mostrando {rows.length} de {total}. Árboles con varios ejes: código

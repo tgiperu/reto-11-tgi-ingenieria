@@ -411,7 +411,8 @@ export const plotsRouter = router({
         .leftJoin(brigade, eq(brigade.id, plot.brigadeId))
         .orderBy(desc(plot.number));
       const aggregates = await plotAggregates(db);
-      // Primero las parcelas con actividad más reciente (registros sincronizados o creadas hace poco).
+      // Primero las parcelas con el último registro subido; sin registros, por fecha de creación.
+      // El orden se aplica antes de filtrar, así que vale igual para Todas, Bloqueadas, En revisión y Con alertas.
       const lastSync = new Map(
         (
           await db.execute<{ at: string; plot_number: number }>(
@@ -420,7 +421,7 @@ export const plotsRouter = router({
         ).rows.map((r) => [r.plot_number, new Date(r.at).getTime()])
       );
       const activity = (r: (typeof rows)[number]) =>
-        Math.max(lastSync.get(r.number) ?? 0, r.createdAt.getTime());
+        lastSync.get(r.number) ?? r.createdAt.getTime();
       rows.sort((a, b) => activity(b) - activity(a) || b.number - a.number);
       const q = normalizeKey(input.search ?? "");
       const all = rows
@@ -594,7 +595,7 @@ export const plotsRouter = router({
         SELECT * FROM (
           SELECT DISTINCT ON (t.id) m.id, t.code, m.category, sp.name AS species_name, m.species_id,
                  m.stems, m.dap_eq, m.height, m.crown_min, m.crown_max, m.dac1, m.dac2, m.health,
-                 m.has_photo, m.review, m.alerts, m.notes, m.carbon_total, m.measured_at
+                 m.has_photo, m.review, m.alerts, m.notes, m.carbon_total, m.measured_at, m.synced_at
           FROM tree t
           JOIN measurement m ON m.tree_id = t.id
           LEFT JOIN species sp ON sp.id = m.species_id
@@ -602,7 +603,7 @@ export const plotsRouter = router({
             AND (${input.category} IN ('ar', 'br') OR m.category = ${input.category})
           ORDER BY t.id, m.measured_at DESC
         ) x
-        ORDER BY x.measured_at DESC, (x.code)::int
+        ORDER BY x.synced_at DESC, x.measured_at DESC, (x.code)::int
         LIMIT ${MAX_RECORDS_PAGE} OFFSET ${input.offset}
       `);
       const [{ n } = { n: 0 }] = (
