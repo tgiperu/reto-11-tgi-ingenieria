@@ -9,12 +9,14 @@ export function Modal({
   title,
   children,
   footer,
+  size = "md",
 }: {
   open: boolean;
   onClose: () => void;
-  title: string;
+  title: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
+  size?: "md" | "lg" | "xl";
 }) {
   const ref = useRef<HTMLDialogElement>(null);
 
@@ -35,12 +37,12 @@ export function Modal({
   return (
     <dialog
       aria-labelledby="modal-title"
-      className="m-auto w-[min(520px,calc(100vw-32px))] rounded-lg border border-line bg-white p-0 text-ink shadow-[6px_0_0_rgb(27_27_24/18%)]"
+      className={`m-auto ${{ lg: "w-[min(780px,calc(100vw-32px))]", md: "w-[min(520px,calc(100vw-32px))]", xl: "w-[min(1200px,calc(100vw-32px))]" }[size]} rounded-lg border border-line bg-white p-0 text-ink shadow-[6px_0_0_rgb(27_27_24/18%)]`}
       onClose={onClose}
       ref={ref}
     >
       {open ? (
-        <div className="flex max-h-[85vh] flex-col">
+        <div className="flex max-h-[90vh] flex-col">
           <div className="flex items-center justify-between gap-3 border-line border-b px-5 py-4">
             <h2 className="font-bold text-lg" id="modal-title">
               {title}

@@ -11,7 +11,7 @@ import { refreshPlotStatuses } from "../lib/evaluation";
 const LIMA_TZ = "America/Lima";
 const DAY_MS = 86_400_000;
 const FEED_LIMIT = 10;
-const SPECIES_ROWS = 8;
+const SPECIES_ROWS = 5;
 const DOTS_PER_SPECIES = 14;
 const WEEK_DAYS = 7;
 
@@ -126,6 +126,7 @@ type SpeciesAgg = {
 // biome-ignore lint/style/useConsistentTypeDefinitions: db.execute exige tipos con firma de índice implícita
 type FeedRow = {
   code: string;
+  has_photo: boolean;
   dap_eq: number | null;
   dap_max: number | null;
   dap_mean: number | null;
@@ -222,12 +223,22 @@ export const dashboardRouter = router({
   }),
 
   overview: staffProcedure
-    .input(filtersSchema)
+    .input(
+      filtersSchema.extend({
+        feedPage: z.number().int().min(0).default(0),
+        speciesFilterId: z.number().int().nullable().default(null),
+        speciesPage: z.number().int().min(0).default(0),
+      })
+    )
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: muchas reglas de negocio o ramas de presentación que no ganan claridad al dividirse
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
       const where = filterWhere(input, true);
       const whereAllSpecies = filterWhere(input, false);
+      const speciesSearch =
+        input.speciesFilterId === null
+          ? sql``
+          : sql` AND sp.id = ${input.speciesFilterId}`;
 
       const [kpis] = (
         await db.execute<Kpis>(sql`
@@ -251,8 +262,17 @@ export const dashboardRouter = router({
                count(*) FILTER (WHERE ${ALT_OUT})::int AS alt_out
         FROM measurement m JOIN plot p ON p.number = m.plot_number
         JOIN species sp ON sp.id = m.species_id
-        WHERE ${whereAllSpecies}
-        GROUP BY sp.id ORDER BY n DESC LIMIT ${SPECIES_ROWS}
+        WHERE ${whereAllSpecies}${speciesSearch}
+        GROUP BY sp.id ORDER BY n DESC, sp.id
+        LIMIT ${SPECIES_ROWS} OFFSET ${input.speciesPage * SPECIES_ROWS}
+      `)
+      ).rows;
+      const [speciesTotal] = (
+        await db.execute<{ n: number }>(sql`
+        SELECT count(DISTINCT m.species_id)::int AS n
+        FROM measurement m JOIN plot p ON p.number = m.plot_number
+        JOIN species sp ON sp.id = m.species_id
+        WHERE ${whereAllSpecies}${speciesSearch}
       `)
       ).rows;
 
@@ -307,17 +327,19 @@ export const dashboardRouter = router({
         await db.execute<FeedRow>(sql`
         SELECT m.id, m.measured_at, m.synced_at, m.plot_number, t.code, m.species_id, sp.name AS species_name,
                sp.dap_mean, sp.dap_sd, sp.dap_min, sp.dap_max, sp.height_max, m.dap_eq, m.height, m.review,
-               ${DAP_OUT} AS is_dap, ${ALT_OUT} AS is_alt
+               m.has_photo, ${DAP_OUT} AS is_dap, ${ALT_OUT} AS is_alt
         FROM measurement m JOIN plot p ON p.number = m.plot_number
         JOIN tree t ON t.id = m.tree_id
         LEFT JOIN species sp ON sp.id = m.species_id
         WHERE ${feedWhere}${statusCond}
-        ORDER BY m.synced_at DESC, m.measured_at DESC LIMIT ${FEED_LIMIT}
+        ORDER BY m.synced_at DESC, m.measured_at DESC, m.id
+        LIMIT ${FEED_LIMIT} OFFSET ${input.feedPage * FEED_LIMIT}
       `)
       ).rows;
 
       const feed = feedRows.flatMap((r) => {
         const items: {
+          hasPhoto: boolean;
           id: string;
           measurementId: string;
           syncedAt: string;
@@ -334,6 +356,7 @@ export const dashboardRouter = router({
         }[] = [];
         const base = {
           code: r.code,
+          hasPhoto: r.has_photo,
           measurementId: r.id,
           plot: r.plot_number,
           review: r.review,
@@ -390,6 +413,12 @@ export const dashboardRouter = router({
         },
         dataRange: { max: range?.max_d ?? null, min: range?.min_d ?? null },
         feed,
+        feedPageSize: FEED_LIMIT,
+        feedTotal: {
+          all: counts.all_n,
+          done: counts.all_n - counts.open_n,
+          open: counts.open_n,
+        }[input.status],
         kpis: {
           alertsTotal: kpis?.alerts_total ?? 0,
           altOut: kpis?.alt_out ?? 0,
@@ -415,6 +444,8 @@ export const dashboardRouter = router({
           n: s.n,
           name: s.name,
         })),
+        speciesPageSize: SPECIES_ROWS,
+        speciesTotal: speciesTotal?.n ?? 0,
       };
     }),
 
@@ -463,4 +494,16 @@ export const dashboardRouter = router({
         plotNumber: row.plotNumber,
       });
     }),
+
+  /** Especies con mediciones, para el selector buscable del rango esperado. */
+  speciesOptions: staffProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db.execute<{ id: number; n: number; name: string }>(
+      sql`
+        SELECT sp.id, sp.name, count(m.id)::int AS n
+        FROM species sp JOIN measurement m ON m.species_id = sp.id
+        GROUP BY sp.id ORDER BY sp.name
+      `
+    );
+    return rows.rows.map((r) => ({ id: r.id, n: r.n, name: r.name }));
+  }),
 });

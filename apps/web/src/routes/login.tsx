@@ -1,6 +1,7 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Loader2, WifiOff } from "lucide-react";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useEffect, useId, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/app/button";
 import { APP_VERSION } from "@/lib/app-version";
@@ -35,6 +36,11 @@ function LoginPage() {
   const [error, setError] = useState("");
   const { online } = useSyncState();
 
+  // Al llegar al login no deben quedar avisos de la sesión anterior.
+  useEffect(() => {
+    toast.dismiss();
+  }, []);
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -66,7 +72,7 @@ function LoginPage() {
     >
       <img
         alt=""
-        className="absolute inset-0 -z-20 hidden size-full object-cover lg:block object-[22%_78%] lg:object-[28%_55%]"
+        className="absolute inset-0 -z-20 hidden size-full object-cover object-[22%_78%] lg:block lg:object-[28%_55%]"
         fetchPriority="high"
         height={1024}
         src="/bg-login.webp"

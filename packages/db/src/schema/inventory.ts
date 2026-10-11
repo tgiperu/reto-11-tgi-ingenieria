@@ -1,4 +1,5 @@
 import type {
+  CustomRuleDef,
   RuleAlert,
   RuleSetting,
 } from "@reto-11-tgi-ingenieria/domain/rules";
@@ -140,6 +141,8 @@ export const measurementPhoto = pgTable("measurement_photo", {
 
 export const ruleSetting = pgTable("rule_setting", {
   active: boolean("active").notNull().default(true),
+  /** Definición de las reglas creadas por el administrador (las integradas la dejan vacía). */
+  custom: jsonb("custom").$type<CustomRuleDef | null>(),
   key: text("key").primaryKey(),
   param: doublePrecision("param"),
   updatedAt: timestamp("updated_at")

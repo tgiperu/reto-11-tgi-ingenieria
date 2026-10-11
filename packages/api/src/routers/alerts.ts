@@ -4,13 +4,19 @@ import {
   ruleSetting,
 } from "@reto-11-tgi-ingenieria/db/schema/inventory";
 import type { CategoryKey } from "@reto-11-tgi-ingenieria/domain/categories";
+import { CATEGORY_KEYS } from "@reto-11-tgi-ingenieria/domain/categories";
 import {
+  CUSTOM_ACTIONS,
+  CUSTOM_OPERATORS,
+  CUSTOM_VARIABLES,
+  customRuleMeta,
   evaluateMeasurement,
+  isCustomKey,
   RULE_KEYS,
   RULE_LIST,
-  type RuleKey,
   type RuleSetting,
 } from "@reto-11-tgi-ingenieria/domain/rules";
+import { TRPCError } from "@trpc/server";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -31,7 +37,24 @@ import {
 } from "../lib/settings";
 
 const DEFAULT_K = 3;
-const RULE_KEY_ENUM = z.enum(RULE_KEYS);
+const RULE_KEY_INPUT = z
+  .string()
+  .refine(
+    (key) => (RULE_KEYS as readonly string[]).includes(key) || isCustomKey(key)
+  );
+const CUSTOM_RULE_INPUT = z.object({
+  action: z.enum(Object.keys(CUSTOM_ACTIONS) as [keyof typeof CUSTOM_ACTIONS]),
+  categories: z.array(z.enum(CATEGORY_KEYS)).nullable(),
+  name: z.string().trim().min(3).max(80),
+  operator: z.enum(
+    Object.keys(CUSTOM_OPERATORS) as [keyof typeof CUSTOM_OPERATORS]
+  ),
+  severity: z.enum(["warning", "critical"]),
+  value: z.number().nonnegative().max(100_000),
+  variable: z.enum(
+    Object.keys(CUSTOM_VARIABLES) as [keyof typeof CUSTOM_VARIABLES]
+  ),
+});
 
 // biome-ignore lint/style/useConsistentTypeDefinitions: db.execute exige tipos con firma de índice implícita
 type HitRow = {
@@ -54,7 +77,12 @@ function sameSettings(
   a: readonly RuleSetting[],
   b: readonly RuleSetting[]
 ): boolean {
-  return RULE_KEYS.every((key) => {
+  const keys = new Set<string>([
+    ...RULE_KEYS,
+    ...a.map((s) => s.key),
+    ...b.map((s) => s.key),
+  ]);
+  return [...keys].every((key) => {
     const x = a.find((s) => s.key === key);
     const y = b.find((s) => s.key === key);
     return x?.active === y?.active && x?.param === y?.param;
@@ -158,6 +186,50 @@ export const alertsRouter = router({
   }),
 
   rules: router({
+    /** Crea una alerta por umbral (queda en borrador hasta publicar el paquete). */
+    createCustom: adminProcedure
+      .input(CUSTOM_RULE_INPUT)
+      .mutation(async ({ ctx, input }) => {
+        const key = `custom:${crypto.randomUUID().slice(0, 8)}`;
+        await ctx.db.insert(ruleSetting).values({
+          active: true,
+          custom: {
+            action: input.action,
+            categories: input.categories?.length ? input.categories : null,
+            name: input.name,
+            operator: input.operator,
+            severity: input.severity,
+            variable: input.variable,
+          },
+          key,
+          param: input.value,
+        });
+        await writeAudit(ctx.db, ctx.actor, {
+          action: "rules.create",
+          detail: { name: input.name },
+          entity: "rule",
+          entityId: key,
+        });
+        return { key };
+      }),
+
+    deleteCustom: adminProcedure
+      .input(z.object({ key: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!isCustomKey(input.key)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Solo se pueden eliminar las alertas creadas por ti",
+          });
+        }
+        await ctx.db.delete(ruleSetting).where(eq(ruleSetting.key, input.key));
+        await writeAudit(ctx.db, ctx.actor, {
+          action: "rules.delete",
+          entity: "rule",
+          entityId: input.key,
+        });
+      }),
+
     list: staffProcedure.query(async ({ ctx }) => {
       const { db } = ctx;
       const draft = await getDraftRules(db);
@@ -172,19 +244,37 @@ export const alertsRouter = router({
       return {
         activeCount: draft.filter((s) => s.active).length,
         dirty: !sameSettings(draft, published.settings),
-        rules: RULE_LIST.map((meta) => {
-          const setting = draft.find((s) => s.key === meta.key);
-          return {
-            ...meta,
-            active: setting?.active ?? true,
-            hits:
-              meta.key === "coord"
-                ? (coordHits?.n ?? 0)
-                : (hits.get(meta.key) ?? 0),
-            hitsUnit: meta.key === "coord" ? "parcelas" : "",
-            param: setting?.param ?? null,
-          };
-        }),
+        rules: [
+          ...RULE_LIST.map((meta) => {
+            const setting = draft.find((s) => s.key === meta.key);
+            return {
+              ...meta,
+              active: setting?.active ?? true,
+              custom: false,
+              hits:
+                meta.key === "coord"
+                  ? (coordHits?.n ?? 0)
+                  : (hits.get(meta.key) ?? 0),
+              hitsUnit: meta.key === "coord" ? "parcelas" : "",
+              param: setting?.param ?? null,
+            };
+          }),
+          ...draft.flatMap((setting) => {
+            const meta = customRuleMeta(setting);
+            return meta
+              ? [
+                  {
+                    ...meta,
+                    active: setting.active,
+                    custom: true,
+                    hits: hits.get(setting.key) ?? 0,
+                    hitsUnit: "",
+                    param: setting.param,
+                  },
+                ]
+              : [];
+          }),
+        ],
         version: published.label,
       };
     }),
@@ -300,7 +390,7 @@ export const alertsRouter = router({
       .input(
         z.object({
           active: z.boolean().optional(),
-          key: RULE_KEY_ENUM,
+          key: RULE_KEY_INPUT,
           param: z.number().nonnegative().max(100_000).nullable().optional(),
         })
       )
@@ -310,16 +400,23 @@ export const alertsRouter = router({
         const active = input.active ?? current?.active ?? true;
         const param =
           input.param === undefined ? (current?.param ?? null) : input.param;
-        await ctx.db
-          .insert(ruleSetting)
-          .values({ active, key: input.key, param })
-          .onConflictDoUpdate({
-            set: { active, param },
-            target: ruleSetting.key,
-          });
+        if (isCustomKey(input.key)) {
+          await ctx.db
+            .update(ruleSetting)
+            .set({ active, param })
+            .where(eq(ruleSetting.key, input.key));
+        } else {
+          await ctx.db
+            .insert(ruleSetting)
+            .values({ active, key: input.key, param })
+            .onConflictDoUpdate({
+              set: { active, param },
+              target: ruleSetting.key,
+            });
+        }
         await writeAudit(ctx.db, ctx.actor, {
           action: "rules.update",
-          detail: { active, key: input.key as RuleKey, param },
+          detail: { active, key: input.key, param },
           entity: "rule",
           entityId: input.key,
         });

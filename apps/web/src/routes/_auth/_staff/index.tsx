@@ -13,8 +13,9 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/app/button";
+import type { ComboItem } from "@/components/app/combobox";
 import { Notice } from "@/components/app/panel";
-import { type ExportSummary, exportOutliers } from "@/features/panel/export";
+import { exportOutliers } from "@/features/panel/export";
 import { Feed } from "@/features/panel/feed";
 import {
   DEFAULT_FILTERS,
@@ -22,6 +23,7 @@ import {
   type PanelFilters,
 } from "@/features/panel/filters";
 import { SpeciesRanges } from "@/features/panel/species-ranges";
+import { PhotoModal } from "@/features/parcelas/modals";
 import { fmtInt, fmtTimeSeconds } from "@/lib/format";
 import { trpc } from "@/utils/trpc";
 
@@ -36,17 +38,11 @@ function Kpi({
   value,
   label,
   tone,
-  hint,
-  on,
-  onPick,
 }: {
   icon: ReactNode;
   value: number;
   label: string;
   tone: "plain" | "warn" | "ok";
-  hint: string;
-  on: boolean;
-  onPick: () => void;
 }) {
   const color = {
     ok: "text-ok-fg",
@@ -54,13 +50,7 @@ function Kpi({
     warn: "text-warn-fg",
   }[tone];
   return (
-    <button
-      aria-pressed={on}
-      className={`flex min-w-0 cursor-pointer flex-col items-start gap-1 px-4 py-3 text-left hover:bg-sunken ${on ? "bg-sel" : "bg-transparent"}`}
-      onClick={onPick}
-      title={hint}
-      type="button"
-    >
+    <div className="flex min-w-0 flex-col items-start gap-1 px-4 py-3">
       <span
         className={`flex items-center gap-1.5 font-semibold text-xs ${color}`}
       >
@@ -70,18 +60,27 @@ function Kpi({
       <span className="font-mono font-semibold text-[30px] leading-none">
         {fmtInt(value)}
       </span>
-    </button>
+    </div>
   );
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: página de panel con varios filtros, paginaciones y diálogos que no ganan claridad al dividirse
 function PanelPage() {
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<PanelFilters>(DEFAULT_FILTERS);
-  const [exported, setExported] = useState<ExportSummary | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [feedPage, setFeedPage] = useState(0);
+  const [speciesPage, setSpeciesPage] = useState(0);
+  const [speciesFilterId, setSpeciesFilterId] = useState(0);
+  const [photoId, setPhotoId] = useState<string | null>(null);
 
   const overview = useQuery({
-    ...trpc.dashboard.overview.queryOptions(filters),
+    ...trpc.dashboard.overview.queryOptions({
+      ...filters,
+      feedPage,
+      speciesPage,
+      speciesFilterId: speciesFilterId === 0 ? null : speciesFilterId,
+    }),
     placeholderData: (previous) => previous,
     refetchInterval: REFRESH_MS,
   });
@@ -93,11 +92,33 @@ function PanelPage() {
   );
 
   // Las mediciones que aparecen después de la primera carga se marcan como NUEVA.
+  // Al cambiar los filtros se vuelve a la primera página.
+  const filtersKey = JSON.stringify(filters);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: solo reacciona al cambio de filtros
+  useEffect(() => {
+    setFeedPage(0);
+    setSpeciesPage(0);
+  }, [filtersKey]);
+
+  const speciesOptions = useQuery(trpc.dashboard.speciesOptions.queryOptions());
+  const speciesItems = useMemo<ComboItem<number>[]>(
+    () => [
+      { id: 0, label: "Todas las especies", name: "Todas las especies" },
+      ...(speciesOptions.data ?? []).map((s) => ({
+        hint: `${s.n}`,
+        id: s.id,
+        label: s.name,
+        name: s.name,
+      })),
+    ],
+    [speciesOptions.data]
+  );
+
   const seen = useRef<Set<string> | null>(null);
   const [newIds, setNewIds] = useState<ReadonlySet<string>>(new Set());
   const { data } = overview;
   useEffect(() => {
-    if (!data) {
+    if (!data || feedPage !== 0) {
       return;
     }
     const ids = data.feed.map((f) => f.id);
@@ -112,7 +133,7 @@ function PanelPage() {
     if (fresh.length > 0) {
       setNewIds(new Set(fresh));
     }
-  }, [data]);
+  }, [data, feedPage]);
 
   const speciesName = useMemo(
     () => data?.species.find((s) => s.id === filters.speciesId)?.name ?? null,
@@ -125,7 +146,10 @@ function PanelPage() {
       const rows = await queryClient.fetchQuery(
         trpc.dashboard.export.queryOptions(filters)
       );
-      setExported(await exportOutliers(rows, speciesName, filters.variable));
+      const summary = await exportOutliers(rows, speciesName, filters.variable);
+      toast.success("Excel exportado", {
+        description: `${summary.fileName} · ${summary.species} especies · ${summary.rowsDap} DAP · ${summary.rowsAlt} altura`,
+      });
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "No se pudo exportar"
@@ -143,10 +167,6 @@ function PanelPage() {
           <h1 className="text-balance font-bold text-[26px] leading-tight tracking-tight">
             Validación de diámetros y alturas atípicas
           </h1>
-          <p className="hidden max-w-[68ch] font-serif text-[15px] text-ink-3 leading-relaxed sm:block">
-            Evaluación de parcelas adicionales de carbono · PNCAM y CCEAN.
-            Acepta el valor si es correcto o pide una nueva medición en campo.
-          </p>
           <span className="flex items-center gap-2 font-medium text-[13px] text-ok-fg">
             <span className="live-dot size-[9px] rounded-full bg-ok" />
             En vivo · última medición recibida{" "}
@@ -165,30 +185,6 @@ function PanelPage() {
           {exporting ? "Exportando…" : "Exportar a Excel"}
         </Button>
       </header>
-
-      {exported ? (
-        <Notice
-          className="flex flex-wrap items-center justify-between gap-3"
-          tone="ok"
-        >
-          <div className="flex flex-col gap-0.5">
-            <strong className="text-sm">Descargado: {exported.fileName}</strong>
-            <span>
-              3 hojas: Resumen por especie ({exported.species} especies) ·
-              Atípicos DAP ({exported.rowsDap} filas) · Atípicos altura (
-              {exported.rowsAlt} filas). Respeta los filtros aplicados.
-            </span>
-          </div>
-          <Button
-            aria-label="Cerrar aviso"
-            onClick={() => setExported(null)}
-            size="sm"
-            variant="ghost"
-          >
-            <X aria-hidden="true" size={16} />
-          </Button>
-        </Notice>
-      ) : null}
 
       <details className="border-line border-y sm:hidden">
         <summary className="flex min-h-11 cursor-pointer items-center gap-2 font-semibold text-sm">
@@ -215,46 +211,26 @@ function PanelPage() {
         className="grid grid-cols-2 divide-line overflow-hidden rounded-lg border border-line bg-white sm:grid-cols-4 sm:divide-x [&>*:nth-child(n+3)]:border-line [&>*:nth-child(n+3)]:border-t sm:[&>*:nth-child(n+3)]:border-t-0"
       >
         <Kpi
-          hint="Sin alerta o ya aceptadas: ver resueltas"
           icon={<Check size={14} />}
           label="Validadas"
-          on={filters.status === "done" && filters.variable === "all"}
-          onPick={() =>
-            setFilters({ ...filters, status: "done", variable: "all" })
-          }
           tone="ok"
           value={kpis?.validated ?? 0}
         />
         <Kpi
-          hint="Fuera de media ± k·DE: ver solo DAP"
           icon={<Ruler size={14} />}
           label="DAP atípico"
-          on={filters.variable === "dap" && filters.status === "open"}
-          onPick={() =>
-            setFilters({ ...filters, status: "open", variable: "dap" })
-          }
           tone="warn"
           value={kpis?.dapOut ?? 0}
         />
         <Kpi
-          hint="Sobre el máximo de la especie: ver solo altura"
           icon={<TriangleAlert size={14} />}
           label="Altura atípica"
-          on={filters.variable === "alt" && filters.status === "open"}
-          onPick={() =>
-            setFilters({ ...filters, status: "open", variable: "alt" })
-          }
           tone="warn"
           value={kpis?.altOut ?? 0}
         />
         <Kpi
-          hint="Sin aceptar ni re-medir"
           icon={<CircleCheck size={14} />}
           label="Por revisar"
-          on={filters.status === "open" && filters.variable === "all"}
-          onPick={() =>
-            setFilters({ ...filters, status: "open", variable: "all" })
-          }
           tone="plain"
           value={kpis?.pending ?? 0}
         />
@@ -269,17 +245,34 @@ function PanelPage() {
         onAccept={(measurementId) =>
           resolve.mutate({ action: "accept", measurementId })
         }
+        onPage={setFeedPage}
+        onPhoto={setPhotoId}
         onRemeasure={(measurementId) =>
           resolve.mutate({ action: "remeasure", measurementId })
         }
         onStatus={(status) => setFilters({ ...filters, status })}
+        page={feedPage}
+        pageSize={data?.feedPageSize ?? 10}
         status={filters.status}
+        total={data?.feedTotal ?? 0}
       />
 
+      <PhotoModal id={photoId} onClose={() => setPhotoId(null)} />
+
       <SpeciesRanges
+        filterId={speciesFilterId}
+        onFilter={(id) => {
+          setSpeciesFilterId(id);
+          setSpeciesPage(0);
+        }}
+        onPage={setSpeciesPage}
         onSelect={(speciesId) => setFilters({ ...filters, speciesId })}
+        options={speciesItems}
+        page={speciesPage}
+        pageSize={data?.speciesPageSize ?? 5}
         rows={data?.species ?? []}
         selected={filters.speciesId}
+        total={data?.speciesTotal ?? 0}
         variable={filters.variable}
       />
     </>

@@ -16,6 +16,8 @@ export interface ComboItem<T extends string | number> {
 }
 
 interface Props<T extends string | number> {
+  /** Versión baja para barras de herramientas (etiqueta solo para lectores de pantalla). */
+  compact?: boolean;
   disabled?: boolean;
   emptyLabel?: string;
   headline?: (count: number, all: boolean) => string;
@@ -40,6 +42,7 @@ export function Combobox<T extends string | number>({
   emptyLabel = "Sin resultados · limpiar búsqueda",
   onEmpty,
   disabled,
+  compact = false,
 }: Props<T>) {
   const id = useId();
   const listId = `${id}-list`;
@@ -81,12 +84,19 @@ export function Combobox<T extends string | number>({
       className={cn("relative flex flex-col gap-1.5", open ? "z-40" : "z-[1]")}
       ref={root}
     >
-      <label className="font-semibold text-[13px] text-ink-2" htmlFor={id}>
+      <label
+        className={cn(
+          "font-semibold text-[13px] text-ink-2",
+          compact && "sr-only"
+        )}
+        htmlFor={id}
+      >
         {label}
       </label>
       <div
         className={cn(
-          "flex min-h-[52px] items-center gap-2 rounded-md bg-white py-0 pr-1.5 pl-3",
+          "flex items-center gap-2 rounded-md bg-white py-0 pr-1.5 pl-3",
+          compact ? "min-h-10" : "min-h-[52px]",
           open ? "border-2 border-primary" : "border border-field",
           disabled && "opacity-60"
         )}
@@ -96,7 +106,10 @@ export function Combobox<T extends string | number>({
           aria-controls={listId}
           aria-expanded={open}
           autoComplete="off"
-          className="min-w-0 flex-1 border-0 bg-transparent font-semibold text-base text-ink outline-none focus-visible:shadow-none"
+          className={cn(
+            "min-w-0 flex-1 border-0 bg-transparent font-semibold text-ink outline-none focus-visible:shadow-none",
+            compact ? "text-sm" : "text-base"
+          )}
           disabled={disabled}
           id={id}
           onChange={(e) => {
@@ -114,7 +127,10 @@ export function Combobox<T extends string | number>({
         />
         <button
           aria-label={open ? "Cerrar lista" : "Abrir lista"}
-          className="flex size-10 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-ink-3 hover:text-ink"
+          className={cn(
+            "flex cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-ink-3 hover:text-ink",
+            compact ? "size-8" : "size-10"
+          )}
           disabled={disabled}
           onClick={() => (open ? close() : setOpen(true))}
           type="button"
@@ -128,7 +144,12 @@ export function Combobox<T extends string | number>({
       </div>
       {hint ? <span className="text-ink-3 text-xs">{hint}</span> : null}
       {open ? (
-        <div className="absolute top-[86px] right-0 left-0 z-30 overflow-hidden rounded-lg border border-edge bg-white shadow-[6px_0_0_rgb(27_27_24/18%)]">
+        <div
+          className={cn(
+            "absolute right-0 left-0 z-30 overflow-hidden rounded-lg border border-edge bg-white shadow-[6px_0_0_rgb(27_27_24/18%)]",
+            compact ? "top-[46px]" : "top-[86px]"
+          )}
+        >
           <div className="border-line-2 border-b px-3 py-2 text-ink-3 text-xs">
             {headline
               ? headline(filtered.length, q === "")
@@ -149,7 +170,8 @@ export function Combobox<T extends string | number>({
               >
                 <button
                   className={cn(
-                    "flex min-h-[52px] w-full items-center gap-2 border-0 px-3.5 py-1.5 text-left text-[15px]",
+                    compact ? "min-h-10 text-sm" : "min-h-[52px] text-[15px]",
+                    "flex w-full items-center gap-2 border-0 px-3.5 py-1.5 text-left",
                     it.disabled
                       ? "cursor-not-allowed bg-white text-ink-3"
                       : "cursor-pointer",

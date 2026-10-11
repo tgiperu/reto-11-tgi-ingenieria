@@ -61,6 +61,7 @@
   --color-sec-parcelas: #257a4a;
   --color-sec-alertas: #d2420e;
   --color-sec-catalogos: #6b3fa0;
+  --color-sec-usuarios: #8a4b14;
   --color-sec-campo: #0e7c86;
 
   /* Estados. El bermellón queda reservado a errores. */
@@ -140,6 +141,10 @@ table {
   --sec: #6b3fa0;
   --sec-ink: #ffffff;
 }
+[data-sec="usuarios"] {
+  --sec: #8a4b14;
+  --sec-ink: #ffffff;
+}
 [data-sec="campo"] {
   --sec: #0e7c86;
   --sec-ink: #ffffff;
@@ -197,6 +202,93 @@ table {
   }
 }
 
+/* Pestaña activa del menú: entra con un pequeño rebote y su cuadro de color crece. */
+@keyframes tab-pop {
+  from {
+    opacity: 0.6;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tab-active {
+  animation: tab-pop 220ms ease-out both;
+}
+
+.tab-active .tab-dot {
+  transform: scale(1.3);
+}
+
+.tab-dot {
+  transition: transform 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-active {
+    animation: none;
+  }
+
+  .tab-dot {
+    transition: none;
+  }
+}
+
+/* Velo de cambio de pestaña: árbol que se llena de verde mientras cargan los datos. */
+@keyframes mask-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes mask-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes tree-fill {
+  0% {
+    clip-path: inset(100% 0 0 0);
+  }
+  80%,
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.page-mask-in {
+  animation: mask-in 150ms ease-out both;
+}
+
+.page-mask-out {
+  animation: mask-out 300ms ease-in both;
+}
+
+.page-mask-tree {
+  animation: tree-fill 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-mask-in,
+  .page-mask-out {
+    animation: none;
+  }
+
+  .page-mask-tree {
+    clip-path: none;
+    animation: none;
+  }
+}
+
 /* MapLibre trae su propio CSS; solo ajustamos el contenedor. */
 .maplibregl-map {
   font-family: var(--font-sans);
@@ -216,13 +308,13 @@ table {
   width: var(--pin-size);
   height: var(--pin-size);
   padding: 0;
+  font: 600 12px var(--font-mono);
+  color: #fff;
+  cursor: pointer;
+  background: var(--pin-color, #5e5c54);
   border: 0;
   border-radius: var(--pin-radius, 50%);
-  background: var(--pin-color, #5e5c54);
   box-shadow: var(--pin-ring, 0 0 0 2px #fff);
-  color: #fff;
-  font: 600 12px var(--font-mono);
-  cursor: pointer;
 }
 
 .pin:hover {
@@ -238,4 +330,98 @@ table {
 
 dialog::backdrop {
   background: rgb(27 27 24 / 55%);
+}
+
+/* Buscadores y campos de texto sin contorno propio: el marco de la etiqueta ya los delimita. */
+input[type="search"]:focus-visible,
+input.outline-none:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Tarjeta al pasar el mouse por una parcela del mapa. */
+.pin-tip {
+  position: absolute;
+  z-index: 20;
+  min-width: 190px;
+  max-width: 260px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: none;
+  background: #fff;
+  border: 1px solid var(--color-edge);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgb(27 27 24 / 18%);
+  animation: mask-in 120ms ease-out both;
+}
+
+.pin-tip-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--color-line-2);
+}
+
+.pin-tip-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.pin-tip-row {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 1px 0;
+}
+
+.pin-tip-row span {
+  color: var(--color-ink-3);
+}
+
+.pin-tip-row b {
+  font-weight: 600;
+  text-align: right;
+}
+
+.pin-tip-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--color-ink-3);
+}
+
+/* Tablas con scroll propio: la barra empieza debajo del encabezado fijo. */
+.table-scroll {
+  --table-head: 42px;
+  scrollbar-color: auto;
+  scrollbar-width: auto;
+}
+
+.table-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+  margin-top: var(--table-head);
+  background: transparent;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-edge);
+  border: 2px solid #fff;
+  border-radius: 6px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-field);
+}
+
+.table-scroll::-webkit-scrollbar-corner {
+  background: transparent;
 }

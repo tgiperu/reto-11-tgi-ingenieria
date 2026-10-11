@@ -16,7 +16,8 @@ El diseño de referencia vive en el artefacto de Claude "Inventario Forestal AID
 | `/mapa` | supervisor, admin | Parcelas sobre OpenStreetMap (MapLibre), detalle por parcela. |
 | `/parcelas` | supervisor, admin | Lista, registros por categoría, auditoría, bloqueo/desbloqueo, corrección (admin), importación CSV/Excel. |
 | `/catalogos` | supervisor (lectura), admin | Especies, brigadas, sectores (con fusión de variantes), categorías y ecuaciones de carbono. |
-| `/alertas` | supervisor (lectura), admin | Reglas versionadas, rango por especie, prueba contra datos históricos, publicación. |
+| `/alertas` | supervisor (lectura), admin | Reglas versionadas (también alertas por umbral creadas por el admin), rango por especie, prueba contra datos históricos, publicación. |
+| `/usuarios` | admin | Usuarios (crear, editar, cambiar contraseña) y roles (los 3 de fábrica y los personalizados, cada uno con un nivel de acceso). |
 | `/campo` | todos | Inicio del brigadista. |
 | `/campo/instalar` | todos | Instalar la app y descargar parcelas, catálogos y reglas para trabajar sin señal. |
 | `/campo/registro` | todos | Formulario de registro con búsqueda de parcela, categoría y especie. |
@@ -87,4 +88,4 @@ bun run docker:up      # web (nginx) + servidor en contenedores
 - Las fotos se guardan en la base como base64 (~300 KB tras comprimirlas en el equipo). Si el volumen crece, muévelas a almacenamiento de objetos y guarda solo la URL en `measurement_photo`.
 - El mapa usa los mosaicos públicos de OpenStreetMap; para operación intensiva conviene un proveedor propio. Los límites de las ANP se muestran si existe `apps/web/public/geo/anp.geojson` (no se incluye).
 - La gestión de usuarios se hace con `db:seed` o directamente en la base; no hay pantalla de administración de cuentas.
-- El panel arranca con el periodo "Todo el periodo" (el diseño mostraba "Hoy") para que el histórico importado sea visible.
+- El panel arranca con el periodo "Hoy". Para ver el histórico importado usa "Última semana" o "Rango personalizado".

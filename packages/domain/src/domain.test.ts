@@ -13,7 +13,12 @@ import {
   sanitizePositiveDecimal,
 } from "./measure";
 import { groupVariants, normalizeTime } from "./names";
-import { evaluateMeasurement, hasBlocking } from "./rules";
+import {
+  defaultRuleSettings,
+  evaluateMeasurement,
+  hasBlocking,
+  type RuleSetting,
+} from "./rules";
 
 describe("geo", () => {
   it("convierte UTM 17S a lat/lon dentro de Piura", () => {
@@ -71,6 +76,35 @@ describe("reglas", () => {
     previous: null,
     species: { dapMax: 24.2, hMax: 17.5, id: 1, isNN: false, name: "Guayacán" },
   };
+
+  it("evalúa alertas personalizadas por umbral", () => {
+    const custom: RuleSetting = {
+      active: true,
+      custom: {
+        action: "block_save",
+        categories: ["la"],
+        name: "Altura excesiva",
+        operator: "gt",
+        severity: "critical",
+        variable: "height",
+      },
+      key: "custom:abc",
+      param: 7,
+    };
+    const settings = [...defaultRuleSettings(), custom];
+    const alerts = evaluateMeasurement(base, settings);
+    expect(alerts.map((a) => a.rule)).toEqual(["custom:abc"]);
+    expect(hasBlocking(alerts)).toBe(true);
+    expect(
+      evaluateMeasurement(base, [
+        ...settings.slice(0, -1),
+        { ...custom, active: false },
+      ])
+    ).toEqual([]);
+    expect(
+      evaluateMeasurement({ ...base, category: "fu" }, settings)
+    ).not.toContainEqual(expect.objectContaining({ rule: "custom:abc" }));
+  });
 
   it("no alerta con valores normales", () => {
     expect(evaluateMeasurement(base)).toEqual([]);

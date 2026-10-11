@@ -4,20 +4,24 @@ import {
   Check,
   CircleCheck,
   Clock,
+  Eye,
   MapPin,
   Ruler,
   TriangleAlert,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 
 import { Button } from "@/components/app/button";
 import { Chip } from "@/components/app/chip";
+import { Modal } from "@/components/app/modal";
+import { Pager } from "@/components/app/pager";
 import { EmptyState } from "@/components/app/panel";
 import { fmtNum, fmtTimeSeconds, plural } from "@/lib/format";
 
 export interface FeedItem {
   code: string;
   deviation: number;
+  hasPhoto: boolean;
   hi: number;
   id: string;
   lo: number;
@@ -44,7 +48,7 @@ const STATE_UI: Record<
   },
   justified: {
     icon: <Camera aria-hidden="true" size={14} />,
-    label: "Justificada con foto",
+    label: "Foto",
     tone: "info",
   },
   none: {
@@ -101,7 +105,12 @@ export function Feed({
   count,
   onAccept,
   onRemeasure,
+  onPhoto,
   busy,
+  page,
+  pageSize,
+  total,
+  onPage,
 }: {
   items: FeedItem[];
   newIds: ReadonlySet<string>;
@@ -111,8 +120,17 @@ export function Feed({
   count: number;
   onAccept: (id: string) => void;
   onRemeasure: (id: string) => void;
+  onPhoto: (id: string) => void;
   busy: boolean;
+  page: number;
+  pageSize: number;
+  total: number;
+  onPage: (page: number) => void;
 }) {
+  const [pending, setPending] = useState<{
+    action: "accept" | "remeasure";
+    item: FeedItem;
+  } | null>(null);
   const filters = [
     { count: counts.open, id: "open", label: "Por revisar" },
     { count: counts.done, id: "done", label: "Resueltas" },
@@ -222,15 +240,29 @@ export function Feed({
                 </span>
               </div>
               <div className="flex flex-col items-start gap-2">
-                <Chip tone={ui?.tone ?? "neutral"}>
-                  {ui?.icon}
-                  {ui?.label}
-                </Chip>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Chip tone={ui?.tone ?? "neutral"}>
+                    {ui?.icon}
+                    {ui?.label}
+                  </Chip>
+                  {item.hasPhoto ? (
+                    <button
+                      aria-label={`Ver evidencia de N° ${item.code}`}
+                      className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 font-semibold text-[13px] text-ink-2 hover:text-ink hover:underline"
+                      onClick={() => onPhoto(item.measurementId)}
+                      title="Ver evidencia"
+                      type="button"
+                    >
+                      <Eye aria-hidden="true" size={16} />
+                      Ver
+                    </button>
+                  ) : null}
+                </div>
                 {open ? (
                   <div className="flex gap-1.5">
                     <Button
                       disabled={busy}
-                      onClick={() => onAccept(item.measurementId)}
+                      onClick={() => setPending({ action: "accept", item })}
                       size="sm"
                       variant="primary"
                     >
@@ -238,7 +270,7 @@ export function Feed({
                     </Button>
                     <Button
                       disabled={busy}
-                      onClick={() => onRemeasure(item.measurementId)}
+                      onClick={() => setPending({ action: "remeasure", item })}
                       size="sm"
                     >
                       <Ruler aria-hidden="true" size={16} /> Re-medir
@@ -261,10 +293,63 @@ export function Feed({
           </li>
         ) : null}
       </ul>
-      <span className="max-w-[80ch] font-serif text-ink-3 text-sm">
-        Rangos calculados con el histórico de mediciones (media ± k·DE para DAP;
-        altura máxima por especie). Las reglas se configuran en Alertas.
-      </span>
+      <Pager
+        label="mediciones atípicas"
+        onPage={onPage}
+        page={page}
+        pageSize={pageSize}
+        total={total}
+      />
+      <Modal
+        footer={
+          <>
+            <Button onClick={() => setPending(null)}>Cancelar</Button>
+            <Button
+              disabled={busy}
+              onClick={() => {
+                if (pending?.action === "accept") {
+                  onAccept(pending.item.measurementId);
+                } else if (pending) {
+                  onRemeasure(pending.item.measurementId);
+                }
+                setPending(null);
+              }}
+              variant="primary"
+            >
+              {pending?.action === "accept"
+                ? "Sí, aceptar"
+                : "Sí, pedir re-medición"}
+            </Button>
+          </>
+        }
+        onClose={() => setPending(null)}
+        open={pending !== null}
+        title={
+          pending?.action === "accept"
+            ? "¿Aceptar esta medición?"
+            : "¿Pedir re-medición?"
+        }
+      >
+        {pending ? (
+          <div className="flex flex-col gap-2 text-sm">
+            <p>
+              <strong>{pending.item.species}</strong> · Parcela P-
+              {pending.item.plot} · N° {pending.item.code}
+            </p>
+            <p className="font-mono">
+              {pending.item.variable === "dap" ? "DAP" : "Altura"}{" "}
+              {fmtNum(pending.item.value)}{" "}
+              {pending.item.variable === "dap" ? "cm" : "m"} · esperado{" "}
+              {fmtNum(pending.item.lo)}–{fmtNum(pending.item.hi)}
+            </p>
+            <p className="text-ink-3">
+              {pending.action === "accept"
+                ? "El valor se da por correcto y la alerta queda resuelta."
+                : "Se pedirá a la brigada medir de nuevo este individuo en campo."}
+            </p>
+          </div>
+        ) : null}
+      </Modal>
     </section>
   );
 }

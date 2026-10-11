@@ -15,23 +15,34 @@ import {
   RefreshCw,
   Square,
   TriangleAlert,
+  Users,
 } from "lucide-react";
-import type { ComponentType } from "react";
+import { type ComponentType, useState } from "react";
 
+import { PageMask } from "@/components/shell/page-mask";
+import { SignOutDialog } from "@/components/shell/sign-out-dialog";
 import { fmtTime } from "@/lib/format";
 import { useSyncState } from "@/lib/offline/sync";
-import { type CachedSession, signOut } from "@/lib/session";
+import type { CachedSession } from "@/lib/session";
 import { trpc } from "@/utils/trpc";
 
-type SectionId = "panel" | "mapa" | "parcelas" | "alertas" | "catalogos";
+type SectionId =
+  | "panel"
+  | "mapa"
+  | "parcelas"
+  | "alertas"
+  | "catalogos"
+  | "usuarios";
 
 interface NavItem {
+  /** Solo se muestra a administradores. */
+  adminOnly?: boolean;
   hue: string;
   icon: ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
   id: SectionId;
   label: string;
   line: string;
-  to: "/" | "/mapa" | "/parcelas" | "/catalogos" | "/alertas";
+  to: "/" | "/mapa" | "/parcelas" | "/catalogos" | "/alertas" | "/usuarios";
 }
 
 /** Lo diario va primero; la configuración queda después del separador. */
@@ -79,6 +90,15 @@ const SETUP: NavItem[] = [
     line: "border-sec-catalogos",
     to: "/catalogos",
   },
+  {
+    adminOnly: true,
+    hue: "bg-sec-usuarios",
+    icon: Users,
+    id: "usuarios",
+    label: "Usuarios",
+    line: "border-sec-usuarios",
+    to: "/usuarios",
+  },
 ];
 
 const ALL = [...DAILY, ...SETUP];
@@ -99,12 +119,10 @@ export function StaffShell({ session }: { session: CachedSession }) {
     refetchInterval: 15_000,
   });
   const fetching = useIsFetching();
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
-  async function onSignOut() {
-    await signOut();
-    queryClient.clear();
-    await navigate({ to: "/login" });
-  }
+  const visible = (item: NavItem) =>
+    !item.adminOnly || session.user.role === "admin";
 
   function tab(item: NavItem, compact: boolean) {
     const alerts = item.id === "alertas" ? badge.data?.alerts : undefined;
@@ -113,7 +131,7 @@ export function StaffShell({ session }: { session: CachedSession }) {
         activeOptions={{ exact: item.to === "/" }}
         activeProps={{
           "aria-current": "page",
-          className: cn("font-bold text-ink", item.line),
+          className: cn("tab-active bg-sunken font-bold text-ink", item.line),
         }}
         className={cn(
           compact
@@ -129,7 +147,7 @@ export function StaffShell({ session }: { session: CachedSession }) {
         ) : (
           <span
             aria-hidden="true"
-            className={cn("size-2.5 rounded-[2px]", item.hue)}
+            className={cn("tab-dot size-2.5 rounded-[2px]", item.hue)}
           />
         )}
         {item.label}
@@ -170,7 +188,7 @@ export function StaffShell({ session }: { session: CachedSession }) {
         >
           {DAILY.map((i) => tab(i, false))}
           <span aria-hidden="true" className="mx-2 my-3.5 w-px bg-line" />
-          {SETUP.map((i) => tab(i, false))}
+          {SETUP.filter(visible).map((i) => tab(i, false))}
         </nav>
 
         <div className="ml-auto flex items-center gap-2 lg:gap-3">
@@ -213,7 +231,7 @@ export function StaffShell({ session }: { session: CachedSession }) {
           <button
             aria-label="Cerrar sesión"
             className="flex size-11 cursor-pointer items-center justify-center rounded-md text-ink-3 hover:bg-sunken hover:text-ink"
-            onClick={onSignOut}
+            onClick={() => setSignOutOpen(true)}
             title="Cerrar sesión"
             type="button"
           >
@@ -225,14 +243,17 @@ export function StaffShell({ session }: { session: CachedSession }) {
       <div aria-hidden="true" className="h-[84px] bg-sec lg:h-[104px]" />
 
       <main className="hoja paso relative z-10 -mt-[48px] mr-2 ml-2 flex min-w-0 flex-1 flex-col gap-5 px-4 pt-6 pb-10 sm:px-6 lg:-mt-[60px] lg:mr-12 lg:ml-10 lg:px-8">
+        <PageMask />
         <Outlet />
       </main>
+
+      <SignOutDialog onClose={() => setSignOutOpen(false)} open={signOutOpen} />
 
       <nav
         aria-label="Secciones"
         className="fixed inset-x-0 bottom-0 z-40 flex border-line border-t bg-white lg:hidden"
       >
-        {ALL.map((i) => tab(i, true))}
+        {ALL.filter(visible).map((i) => tab(i, true))}
       </nav>
     </div>
   );

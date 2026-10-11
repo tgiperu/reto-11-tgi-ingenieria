@@ -1,3 +1,4 @@
+import { PLOT_STATUS_LABELS } from "@reto-11-tgi-ingenieria/domain/constants";
 import { utmToLatLon } from "@reto-11-tgi-ingenieria/domain/geo";
 import type {
   GeoJSONSourceSpecification,
@@ -58,6 +59,48 @@ const FIT_PADDING = 60;
 const FOCUS_ZOOM = 12;
 const ANP_SOURCE = "anp";
 
+const TIP_GAP = 14;
+
+/** Tarjeta de información de la parcela: se arma con nodos de texto, sin HTML. */
+function buildTip(plot: MapPlot): HTMLDivElement {
+  const tip = document.createElement("div");
+  tip.className = "pin-tip";
+  tip.setAttribute("role", "tooltip");
+  const head = document.createElement("div");
+  head.className = "pin-tip-head";
+  const dot = document.createElement("span");
+  dot.className = "pin-tip-dot";
+  dot.style.background = STATUS_COLORS[plot.status] ?? "#5E5C54";
+  const title = document.createElement("strong");
+  title.textContent = `Parcela P-${plot.number}`;
+  head.append(dot, title);
+  tip.append(head);
+  const rows: [string, string][] = [
+    [
+      "Estado",
+      PLOT_STATUS_LABELS[plot.status as keyof typeof PLOT_STATUS_LABELS] ??
+        plot.status,
+    ],
+    ["Sector", plot.sector],
+    ["Estrato", plot.stratum],
+  ];
+  for (const [label, value] of rows) {
+    const row = document.createElement("div");
+    row.className = "pin-tip-row";
+    const key = document.createElement("span");
+    key.textContent = label;
+    const val = document.createElement("b");
+    val.textContent = value;
+    row.append(key, val);
+    tip.append(row);
+  }
+  const hint = document.createElement("div");
+  hint.className = "pin-tip-hint";
+  hint.textContent = "Clic para ver el detalle";
+  tip.append(hint);
+  return tip;
+}
+
 const PIN_SIZE = 28;
 const PIN_SIZE_SELECTED = 36;
 const COMPACT_ZOOM = 10;
@@ -104,6 +147,7 @@ export function PlotMap({
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
   const fitted = useRef(false);
+  const tipRef = useRef<HTMLDivElement | null>(null);
 
   // Mapa y pines (se crean una sola vez por conjunto de parcelas).
   useEffect(() => {
@@ -155,7 +199,34 @@ export function PlotMap({
           "aria-label",
           `Parcela ${plot.number} · ${plot.sector}`
         );
-        el.title = `Parcela ${plot.number} · ${plot.sector}`;
+        const showTip = () => {
+          const host = container.current?.parentElement;
+          if (!host) {
+            return;
+          }
+          tipRef.current?.remove();
+          const tip = buildTip(plot);
+          host.append(tip);
+          tipRef.current = tip;
+          const pin = el.getBoundingClientRect();
+          const box = host.getBoundingClientRect();
+          const width = tip.offsetWidth;
+          const left = Math.min(
+            Math.max(8, pin.left - box.left + pin.width / 2 - width / 2),
+            box.width - width - 8
+          );
+          const above = pin.top - box.top - tip.offsetHeight - TIP_GAP;
+          tip.style.left = `${left}px`;
+          tip.style.top = `${above < 8 ? pin.bottom - box.top + TIP_GAP : above}px`;
+        };
+        const hideTip = () => {
+          tipRef.current?.remove();
+          tipRef.current = null;
+        };
+        el.addEventListener("mouseenter", showTip);
+        el.addEventListener("mouseleave", hideTip);
+        el.addEventListener("focus", showTip);
+        el.addEventListener("blur", hideTip);
         el.addEventListener("click", () => onSelectRef.current(plot.number));
         // MapLibre posiciona el elemento del marcador con su propio transform: el botón va dentro de un contenedor.
         const wrap = document.createElement("div");
@@ -221,6 +292,8 @@ export function PlotMap({
       cancelled = true;
       markers.current.clear();
       cabinetMarkers.current = [];
+      tipRef.current?.remove();
+      tipRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
       fitted.current = false;

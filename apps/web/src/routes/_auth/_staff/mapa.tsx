@@ -88,7 +88,6 @@ function MapPage() {
             />
           </label>
         }
-        subtitle={`${plots.length} parcelas · UTM WGS84 zona 17S convertidas a lat/lon · haz clic en un punto`}
         title="Mapa de parcelas"
       />
 
@@ -106,7 +105,7 @@ function MapPage() {
               selected={current?.number ?? null}
             />
           )}
-          <fieldset className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 rounded-md border border-edge bg-white px-3 py-2.5 text-xs">
+          <fieldset className="absolute top-3 left-3 z-10 flex flex-col gap-1.5 rounded-md border border-edge bg-white px-3 py-2.5 text-xs">
             <legend className="sr-only">Capas</legend>
             <strong>Capas</strong>
             {(

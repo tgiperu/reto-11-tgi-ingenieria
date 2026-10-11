@@ -9,11 +9,23 @@ export const user = pgTable("user", {
   id: text("id").primaryKey(),
   image: text("image"),
   name: text("name").notNull(),
+  /** Nivel de acceso efectivo (admin, supervisor o brigadista). */
   role: text("role").default("brigadista").notNull(),
+  /** Rol asignado desde la página de usuarios; null en cuentas antiguas. */
+  roleId: text("role_id"),
   updatedAt: timestamp("updated_at")
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
+});
+
+/** Roles: los tres de fábrica y los que crea el administrador (cada uno con un nivel de acceso). */
+export const appRole = pgTable("app_role", {
+  access: text("access").default("brigadista").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  system: boolean("system").default(false).notNull(),
 });
 
 export const session = pgTable(

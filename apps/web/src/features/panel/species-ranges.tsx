@@ -2,6 +2,8 @@ import { cn } from "@reto-11-tgi-ingenieria/ui/lib/utils";
 import { TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { Combobox, type ComboItem } from "@/components/app/combobox";
+import { Pager } from "@/components/app/pager";
 import { Panel } from "@/components/app/panel";
 import { fmtInt, fmtNum } from "@/lib/format";
 
@@ -137,11 +139,25 @@ export function SpeciesRanges({
   selected,
   onSelect,
   variable,
+  page,
+  pageSize,
+  total,
+  onPage,
+  options,
+  filterId,
+  onFilter,
 }: {
   rows: SpeciesRow[];
   selected: number | null;
   onSelect: (id: number | null) => void;
   variable: "all" | "dap" | "alt";
+  page: number;
+  pageSize: number;
+  total: number;
+  onPage: (page: number) => void;
+  options: readonly ComboItem<number>[];
+  filterId: number;
+  onFilter: (id: number) => void;
 }) {
   const dapScale = niceScale(
     rows.flatMap((r) => [r.dapMax ?? 0, ...r.dapDots]),
@@ -162,13 +178,20 @@ export function SpeciesRanges({
             <h2 className="font-bold text-lg" id="h-esp">
               Rango esperado por especie
             </h2>
-            <span className="text-[13px] text-ink-3">
-              Cada barra muestra el rango normal de la especie y dónde cayeron
-              las mediciones atípicas.
-            </span>
           </div>
         </div>
         <Legend />
+      </div>
+      <div className="w-full max-w-[260px]">
+        <Combobox
+          compact
+          headline={(n) => `${n} opciones`}
+          items={options}
+          label="Filtrar por especie"
+          onPick={onFilter}
+          placeholder="Todas las especies"
+          selected={filterId}
+        />
       </div>
       <div className="overflow-x-auto">
         <div className="flex min-w-[860px] flex-col gap-2">
@@ -237,6 +260,13 @@ export function SpeciesRanges({
           })}
         </div>
       </div>
+      <Pager
+        label="especies"
+        onPage={onPage}
+        page={page}
+        pageSize={pageSize}
+        total={total}
+      />
     </Panel>
   );
 }

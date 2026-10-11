@@ -29,12 +29,47 @@ export const RULE_KEYS = [
 ] as const;
 export type RuleKey = (typeof RULE_KEYS)[number];
 
+/** Clave de una regla creada por el administrador. */
+export type CustomRuleKey = `custom:${string}`;
+
+export const CUSTOM_VARIABLES = {
+  crown: { label: "Copa promedio", unit: "m" },
+  dac: { label: "DAC promedio", unit: "cm" },
+  dap: { label: "DAP equivalente", unit: "cm" },
+  height: { label: "Altura", unit: "m" },
+} as const;
+export type CustomVariable = keyof typeof CUSTOM_VARIABLES;
+
+export const CUSTOM_OPERATORS = {
+  gt: { label: "mayor que", symbol: ">" },
+  lt: { label: "menor que", symbol: "<" },
+} as const;
+export type CustomOperator = keyof typeof CUSTOM_OPERATORS;
+
+export const CUSTOM_ACTIONS = {
+  block_save: "Impide guardar",
+  confirm: "Pide re-medir o justificar",
+  flag: "Marca para revisión",
+} as const;
+export type CustomAction = keyof typeof CUSTOM_ACTIONS;
+
+/** Definición de una alerta por umbral; el valor del umbral va en `param` de la regla. */
+export interface CustomRuleDef {
+  action: CustomAction;
+  /** `null` = todas las categorías. */
+  categories: CategoryKey[] | null;
+  name: string;
+  operator: CustomOperator;
+  severity: Severity;
+  variable: CustomVariable;
+}
+
 export interface RuleMeta {
-  action: RuleAction;
+  action: RuleAction | CustomAction;
   actionLabel: string;
   defaultParam: number | null;
   description: string;
-  key: RuleKey;
+  key: RuleKey | CustomRuleKey;
   name: string;
   paramLabel: string;
   paramUnit: string;
@@ -207,8 +242,42 @@ export const RULE_LIST: RuleMeta[] = RULE_KEYS.map((key) => RULE_META[key]);
 /** Parte editable de una regla (lo que guarda y publica el administrador). */
 export interface RuleSetting {
   active: boolean;
-  key: RuleKey;
+  /** Solo en reglas personalizadas. */
+  custom?: CustomRuleDef | null;
+  key: RuleKey | CustomRuleKey;
   param: number | null;
+}
+
+export function isCustomKey(key: string): key is CustomRuleKey {
+  return key.startsWith("custom:");
+}
+
+/** Ficha de una regla personalizada con el mismo formato que las integradas. */
+export function customRuleMeta(setting: RuleSetting): RuleMeta | null {
+  const def = setting.custom;
+  if (!def) {
+    return null;
+  }
+  const variable = CUSTOM_VARIABLES[def.variable];
+  const operator = CUSTOM_OPERATORS[def.operator];
+  const where =
+    def.categories === null
+      ? "todas las categorías"
+      : def.categories.join(", ");
+  return {
+    action: def.action,
+    actionLabel: CUSTOM_ACTIONS[def.action],
+    defaultParam: setting.param,
+    description: `${variable.label} ${operator.label} el umbral · ${where}`,
+    key: setting.key,
+    name: def.name,
+    paramLabel: operator.symbol,
+    paramUnit: variable.unit,
+    scope: "both",
+    scopeLabel: SCOPE_LABELS.both,
+    severity: def.severity,
+    severityLabel: def.severity === "critical" ? "Crítica" : "Advertencia",
+  };
 }
 
 export function defaultRuleSettings(): RuleSetting[] {
@@ -222,7 +291,7 @@ export function defaultRuleSettings(): RuleSetting[] {
 export interface RuleAlert {
   /** Impide guardar (o sincronizar) mientras no se corrija. */
   blocking: boolean;
-  rule: RuleKey;
+  rule: RuleKey | CustomRuleKey;
   severity: Severity;
   text: string;
   title: string;
@@ -289,6 +358,58 @@ function makeAlert(
 
 function cm(value: number): string {
   return `${value.toFixed(2)} cm`;
+}
+
+function customValue(
+  input: EvalInput,
+  variable: CustomVariable
+): number | null {
+  switch (variable) {
+    case "dap":
+      return input.dapEq;
+    case "height":
+      return input.height;
+    case "crown":
+      return input.crownAvg;
+    default:
+      return input.dacAvg;
+  }
+}
+
+/** Alertas por umbral creadas por el administrador (misma función en campo y servidor). */
+export function evaluateCustomRules(
+  input: EvalInput,
+  settings: readonly RuleSetting[]
+): RuleAlert[] {
+  const alerts: RuleAlert[] = [];
+  for (const setting of settings) {
+    const def = setting.custom;
+    if (!(def && setting.active) || setting.param === null) {
+      continue;
+    }
+    if (def.categories !== null && !def.categories.includes(input.category)) {
+      continue;
+    }
+    const value = customValue(input, def.variable);
+    if (value === null) {
+      continue;
+    }
+    const hit =
+      def.operator === "gt" ? value > setting.param : value < setting.param;
+    if (!hit) {
+      continue;
+    }
+    const { label, unit } = CUSTOM_VARIABLES[def.variable];
+    const { symbol } = CUSTOM_OPERATORS[def.operator];
+    alerts.push({
+      blocking: def.action === "block_save",
+      rule: setting.key,
+      severity: def.severity,
+      text: `${label} ${value.toFixed(2)} ${unit} ${symbol} ${setting.param} ${unit}. Verifica la medición.`,
+      title: def.name,
+    });
+  }
+  return alerts;
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: muchas reglas de negocio o ramas de presentación que no ganan claridad al dividirse
@@ -433,6 +554,8 @@ export function evaluateMeasurement(
       );
     }
   }
+
+  alerts.push(...evaluateCustomRules(input, settings));
 
   const prev = input.previous;
   if (

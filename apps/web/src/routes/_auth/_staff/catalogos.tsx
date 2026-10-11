@@ -5,6 +5,7 @@ import { Pencil, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/app/button";
+import { Pager } from "@/components/app/pager";
 import {
   Notice,
   PageHeader,
@@ -17,17 +18,21 @@ import { type TabDef, Tabs } from "@/components/app/tabs";
 import {
   type BrigadeEdit,
   BrigadeModal,
+  EQUATION_KEYS,
   EquationsModal,
   SectorModal,
   type SpeciesEdit,
   SpeciesModal,
 } from "@/features/catalogos/forms";
 import { fmtDateTime, fmtInt, fmtNum } from "@/lib/format";
+import { usePaged } from "@/lib/use-paged";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/_auth/_staff/catalogos")({
   component: CatalogsPage,
 });
+
+const TABLE_PAGE = 10;
 
 type TabId = "sp" | "br" | "se" | "ca";
 
@@ -48,6 +53,7 @@ function SpeciesTab({
           normalizeKey(`${s.name} ${s.scientificName ?? ""}`).includes(q)
         );
   }, [data, search]);
+  const paged = usePaged(rows, TABLE_PAGE);
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 border-line border-b px-4 py-3">
@@ -56,7 +62,10 @@ function SpeciesTab({
           <span className="sr-only">Buscar especie</span>
           <input
             className="w-full border-0 bg-transparent text-sm outline-none"
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              paged.reset();
+              setSearch(e.target.value);
+            }}
             placeholder={`Buscar entre ${data.length} especies`}
             type="search"
             value={search}
@@ -83,7 +92,7 @@ function SpeciesTab({
           </tr>
         </thead>
         <tbody>
-          {rows.map((s) => (
+          {paged.items.map((s) => (
             <tr key={s.id}>
               <Td className="font-semibold">{s.name}</Td>
               <Td
@@ -123,6 +132,14 @@ function SpeciesTab({
           ))}
         </tbody>
       </Table>
+      <Pager
+        bordered
+        label="especies"
+        onPage={paged.setPage}
+        page={paged.page}
+        pageSize={paged.pageSize}
+        total={paged.total}
+      />
     </>
   );
 }
@@ -135,57 +152,68 @@ function BrigadesTab({
   onEdit: (b: BrigadeEdit) => void;
 }) {
   const { data = [] } = useQuery(trpc.catalog.brigades.list.queryOptions());
+  const paged = usePaged(data, TABLE_PAGE);
   return (
-    <Table minWidth={720}>
-      <thead>
-        <tr>
-          <Th>Brigada</Th>
-          <Th>Jefe de brigada</Th>
-          <Th>Materos</Th>
-          <Th className="text-right">Parcelas</Th>
-          <Th>Dispositivos</Th>
-          {isAdmin ? (
-            <Th>
-              <span className="sr-only">Editar</span>
-            </Th>
-          ) : null}
-        </tr>
-      </thead>
-      <tbody>
-        {data.map((b) => (
-          <tr key={b.id}>
-            <Td className="py-3 font-mono font-semibold">{b.id}</Td>
-            <Td className="py-3">{b.leaderName}</Td>
-            <Td className="py-3">{b.members.join(", ") || "—"}</Td>
-            <Td className="py-3 text-right font-mono">{b.plots}</Td>
-            <Td className="py-3">
-              {b.devices} equipos ·{" "}
-              {b.lastSync
-                ? `último envío ${fmtDateTime(b.lastSync)}`
-                : "sin envíos"}
-            </Td>
+    <>
+      <Table minWidth={720}>
+        <thead>
+          <tr>
+            <Th>Brigada</Th>
+            <Th>Jefe de brigada</Th>
+            <Th>Materos</Th>
+            <Th className="text-right">Parcelas</Th>
+            <Th>Dispositivos</Th>
             {isAdmin ? (
-              <Td className="text-right">
-                <Button
-                  aria-label={`Editar ${b.id}`}
-                  onClick={() =>
-                    onEdit({
-                      devices: b.devices,
-                      id: b.id,
-                      leaderName: b.leaderName,
-                      members: b.members,
-                    })
-                  }
-                  size="sm"
-                >
-                  <Pencil aria-hidden="true" size={14} />
-                </Button>
-              </Td>
+              <Th>
+                <span className="sr-only">Editar</span>
+              </Th>
             ) : null}
           </tr>
-        ))}
-      </tbody>
-    </Table>
+        </thead>
+        <tbody>
+          {paged.items.map((b) => (
+            <tr key={b.id}>
+              <Td className="py-3 font-mono font-semibold">{b.id}</Td>
+              <Td className="py-3">{b.leaderName}</Td>
+              <Td className="py-3">{b.members.join(", ") || "—"}</Td>
+              <Td className="py-3 text-right font-mono">{b.plots}</Td>
+              <Td className="py-3">
+                {b.devices} equipos ·{" "}
+                {b.lastSync
+                  ? `último envío ${fmtDateTime(b.lastSync)}`
+                  : "sin envíos"}
+              </Td>
+              {isAdmin ? (
+                <Td className="text-right">
+                  <Button
+                    aria-label={`Editar ${b.id}`}
+                    onClick={() =>
+                      onEdit({
+                        devices: b.devices,
+                        id: b.id,
+                        leaderName: b.leaderName,
+                        members: b.members,
+                      })
+                    }
+                    size="sm"
+                  >
+                    <Pencil aria-hidden="true" size={14} />
+                  </Button>
+                </Td>
+              ) : null}
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <Pager
+        bordered
+        label="brigadas"
+        onPage={paged.setPage}
+        page={paged.page}
+        pageSize={paged.pageSize}
+        total={paged.total}
+      />
+    </>
   );
 }
 
@@ -202,6 +230,7 @@ function SectorsTab({ isAdmin }: { isAdmin: boolean }) {
     })
   );
   const suggestions = data?.suggestions ?? [];
+  const paged = usePaged(data?.sectors ?? [], TABLE_PAGE);
   return (
     <>
       {suggestions.length > 0 ? (
@@ -250,7 +279,13 @@ function SectorsTab({ isAdmin }: { isAdmin: boolean }) {
           </tbody>
         </Table>
       ) : null}
-      <Table minWidth={640}>
+      <Table fixed minWidth={640}>
+        <colgroup>
+          <col className="w-[34%]" />
+          <col className="w-[14%]" />
+          <col className="w-[14%]" />
+          <col />
+        </colgroup>
         <thead>
           <tr>
             <Th>Sector</Th>
@@ -260,16 +295,26 @@ function SectorsTab({ isAdmin }: { isAdmin: boolean }) {
           </tr>
         </thead>
         <tbody>
-          {data?.sectors.map((s) => (
+          {paged.items.map((s) => (
             <tr key={s.id}>
               <Td className="font-semibold">{s.name}</Td>
               <Td className="text-right font-mono">{s.plots}</Td>
               <Td className="text-right font-mono">{fmtInt(s.records)}</Td>
-              <Td className="font-mono">{s.variants.join(" · ") || "—"}</Td>
+              <Td className="whitespace-normal break-words font-mono text-xs">
+                {s.variants.join(" · ") || "—"}
+              </Td>
             </tr>
           ))}
         </tbody>
       </Table>
+      <Pager
+        bordered
+        label="sectores"
+        onPage={paged.setPage}
+        page={paged.page}
+        pageSize={paged.pageSize}
+        total={paged.total}
+      />
     </>
   );
 }
@@ -319,6 +364,7 @@ function CatalogsPage() {
   const [brigade, setBrigade] = useState<BrigadeEdit | null>(null);
   const [sectorOpen, setSectorOpen] = useState(false);
   const [eqOpen, setEqOpen] = useState(false);
+  const [eqIndex, setEqIndex] = useState<number | null>(null);
   const categories = useQuery(trpc.catalog.categories.queryOptions());
   const version = useQuery(trpc.catalog.version.queryOptions());
   const current = TABS.find((t) => t.id === tab);
@@ -349,7 +395,6 @@ function CatalogsPage() {
             </Button>
           ) : null
         }
-        subtitle={`Se descargan a cada dispositivo para trabajar sin conexión. Versión ${version.data ?? "—"}.`}
         title="Catálogos"
       />
       {isAdmin ? null : (
@@ -376,22 +421,25 @@ function CatalogsPage() {
             D = diámetro equivalente (cm), Dc = diámetro de copa promedio (m),
             FE = 1 / área de subparcela (ha).
           </span>
-          {categories.data?.formulas.map((f) => (
-            <div
-              className="flex flex-col gap-1 rounded-md bg-paper px-3 py-2.5"
+          {categories.data?.formulas.map((f, i) => (
+            <button
+              aria-pressed={eqIndex === i}
+              className={`flex cursor-pointer flex-col items-start gap-1 rounded-md border-2 px-3 py-2.5 text-left ${eqIndex === i ? "border-primary bg-sel" : "border-transparent bg-paper hover:bg-sunken"}`}
               key={f.name}
+              onClick={() => setEqIndex(eqIndex === i ? null : i)}
+              type="button"
             >
               <strong className="text-[13px]">{f.name}</strong>
               <code className="whitespace-pre-line font-mono text-xs">
                 {f.text}
               </code>
-            </div>
+            </button>
           ))}
           <Button
-            disabled={!(isAdmin && categories.data)}
+            disabled={!(isAdmin && categories.data) || eqIndex === null}
             onClick={() => setEqOpen(true)}
           >
-            Editar ecuaciones (Admin)
+            Editar
           </Button>
         </Panel>
       </div>
@@ -410,12 +458,15 @@ function CatalogsPage() {
         onClose={() => setSectorOpen(false)}
         open={sectorOpen}
       />
-      {categories.data ? (
+      {categories.data && eqIndex !== null ? (
         <EquationsModal
           equations={categories.data.equations}
-          key={`eq-${eqOpen}`}
+          formula={categories.data.formulas[eqIndex]?.text ?? ""}
+          key={`eq-${eqIndex}-${eqOpen}`}
+          name={categories.data.formulas[eqIndex]?.name ?? ""}
           onClose={() => setEqOpen(false)}
           open={eqOpen}
+          target={EQUATION_KEYS[eqIndex] ?? "latizal"}
         />
       ) : null}
     </>
