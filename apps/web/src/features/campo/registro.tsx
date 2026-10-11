@@ -121,7 +121,8 @@ export function RegistroForm({ editId }: { editId?: string }) {
 
   // Edición: solo registros que aún no se enviaron (por enviar o rechazados).
   const editing = useLiveQuery(
-    async () => (editId ? ((await campoDb.records.get(editId)) ?? null) : undefined),
+    async () =>
+      editId ? ((await campoDb.records.get(editId)) ?? null) : undefined,
     [editId],
     undefined
   );
@@ -799,7 +800,7 @@ export function RegistroForm({ editId }: { editId?: string }) {
           size="lg"
           variant="primary"
         >
-          {saving ? "Guardando…" : (editing ? "Guardar cambios" : "Guardar")}
+          {saving ? "Guardando…" : editing ? "Guardar cambios" : "Guardar"}
         </Button>
       </footer>
 

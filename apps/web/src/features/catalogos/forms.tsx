@@ -246,22 +246,60 @@ export function SectorModal({
   );
 }
 
-const FIELDS: { path: string; label: string }[] = [
-  { label: "Latizal · a", path: "latizal.a" },
-  { label: "Latizal · b", path: "latizal.b" },
-  { label: "Fustal · c0", path: "fustal.c0" },
-  { label: "Fustal · c1", path: "fustal.c1" },
-  { label: "Fustal · c2", path: "fustal.c2" },
-  { label: "Arbusto · a", path: "arbusto.a" },
-  { label: "Arbusto · b", path: "arbusto.b" },
-  { label: "Overo · a", path: "overo.a" },
-  { label: "Overo · b", path: "overo.b" },
-  { label: "Brinzal · a", path: "brinzal.a" },
-  { label: "Brinzal · b", path: "brinzal.b" },
-  { label: "Biomasa → carbono", path: "biomassToCarbon" },
-  { label: "Raíces (árbol)", path: "rootRatioTree" },
-  { label: "Raíces (arbusto/brinzal)", path: "rootRatioShrub" },
+export const EQUATION_KEYS = [
+  "latizal",
+  "fustal",
+  "arbusto",
+  "overo",
+  "brinzal",
+] as const;
+export type EquationKey = (typeof EQUATION_KEYS)[number];
+
+const SHRUB_FIELDS = [
+  {
+    hint: "Multiplica la variable principal",
+    label: "Coeficiente a",
+    path: "a",
+  },
+  { hint: "Exponente o término restado", label: "Coeficiente b", path: "b" },
 ];
+const TREE_SHARED = [
+  { label: "Factor biomasa → carbono (compartido)", path: "biomassToCarbon" },
+  { label: "Factor de raíces, árbol (compartido)", path: "rootRatioTree" },
+];
+const SHRUB_SHARED = [
+  {
+    label: "Factor de raíces, arbusto/brinzal (compartido)",
+    path: "rootRatioShrub",
+  },
+];
+
+/** Campos que intervienen en cada ecuación, con la ruta dentro de `Equations`. */
+const FIELDS_BY_KEY: Record<EquationKey, { path: string; label: string }[]> = {
+  arbusto: [
+    ...SHRUB_FIELDS.map((f) => ({ label: f.label, path: `arbusto.${f.path}` })),
+    ...SHRUB_SHARED,
+  ],
+  brinzal: [
+    ...SHRUB_FIELDS.map((f) => ({ label: f.label, path: `brinzal.${f.path}` })),
+    ...SHRUB_SHARED,
+  ],
+  fustal: [
+    { label: "Constante c0", path: "fustal.c0" },
+    { label: "Coeficiente c1 (de D)", path: "fustal.c1" },
+    { label: "Coeficiente c2 (de D²)", path: "fustal.c2" },
+    ...TREE_SHARED,
+  ],
+  latizal: [
+    { label: "Coeficiente a", path: "latizal.a" },
+    { label: "Exponente b", path: "latizal.b" },
+    ...TREE_SHARED,
+  ],
+  overo: [
+    ...SHRUB_FIELDS.map((f) => ({ label: f.label, path: `overo.${f.path}` })),
+    ...SHRUB_SHARED,
+  ],
+};
 
 function getPath(eq: Equations, path: string): number {
   const [a, b] = path.split(".") as [keyof Equations, string | undefined];
@@ -282,16 +320,23 @@ function setPath(eq: Equations, path: string, value: number): Equations {
 
 export function EquationsModal({
   equations,
+  target,
+  name,
+  formula,
   open,
   onClose,
 }: {
   equations: Equations;
+  target: EquationKey;
+  name: string;
+  formula: string;
   open: boolean;
   onClose: () => void;
 }) {
+  const fields = FIELDS_BY_KEY[target];
   const [draft, setDraft] = useState<Record<string, string>>(() =>
     Object.fromEntries(
-      FIELDS.map((f) => [f.path, String(getPath(equations, f.path))])
+      fields.map((f) => [f.path, String(getPath(equations, f.path))])
     )
   );
   const queryClient = useQueryClient();
@@ -300,18 +345,18 @@ export function EquationsModal({
       onError: (e) => toast.error(e.message),
       onSuccess: async (res) => {
         toast.success(
-          `Ecuaciones guardadas · ${res.recomputed} mediciones recalculadas`
+          `${name} guardada · ${res.recomputed} mediciones recalculadas`
         );
         await queryClient.invalidateQueries();
         onClose();
       },
     })
   );
-  const parsed = FIELDS.map((f) => parseDecimal(draft[f.path] ?? ""));
+  const parsed = fields.map((f) => parseDecimal(draft[f.path] ?? ""));
   const valid = parsed.every((v) => v !== null);
   const submit = () => {
-    let next = DEFAULT_EQUATIONS;
-    for (const [i, f] of FIELDS.entries()) {
+    let next = equations;
+    for (const [i, f] of fields.entries()) {
       next = setPath(next, f.path, parsed[i] ?? 0);
     }
     save.mutate(next);
@@ -332,14 +377,13 @@ export function EquationsModal({
       }
       onClose={onClose}
       open={open}
-      title="Editar ecuaciones de carbono"
+      title={`Editar · ${name}`}
     >
-      <p className="text-ink-2 text-sm">
-        Al guardar se recalcula el carbono de todas las mediciones. Cambia estos
-        valores solo con respaldo del equipo técnico.
-      </p>
+      <code className="whitespace-pre-line rounded-md bg-paper px-3 py-2.5 font-mono text-xs">
+        {formula}
+      </code>
       <div className="grid grid-cols-2 gap-3">
-        {FIELDS.map((f) => (
+        {fields.map((f) => (
           <TextField
             inputMode="decimal"
             key={f.path}
@@ -352,6 +396,11 @@ export function EquationsModal({
           />
         ))}
       </div>
+      <p className="text-ink-3 text-xs">
+        Los factores marcados como compartidos también se usan en otras
+        ecuaciones. Al guardar se recalcula el carbono de todas las mediciones:
+        cambia estos valores solo con respaldo del equipo técnico.
+      </p>
     </Modal>
   );
 }

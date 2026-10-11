@@ -3,9 +3,11 @@ import { Search } from "lucide-react";
 
 import { Button } from "@/components/app/button";
 import { PlotStatusChip } from "@/components/app/chip";
+import { Pager } from "@/components/app/pager";
 import { Panel, Table, Td, Th } from "@/components/app/panel";
 import { FilterChips } from "@/components/app/tabs";
 import { fmtInt, fmtIsoDay, fmtNum } from "@/lib/format";
+import { usePaged } from "@/lib/use-paged";
 
 export type StatusFilter = "all" | "locked" | "review" | "alert";
 
@@ -30,10 +32,7 @@ export function PlotTable({
   onSearch,
   selected,
   onOpen,
-  shown,
-  total,
-  onToggleAll,
-  showingAll,
+  pageSize,
 }: {
   rows: PlotRow[];
   counts: { all: number; locked: number; review: number; alert: number };
@@ -43,18 +42,19 @@ export function PlotTable({
   onSearch: (q: string) => void;
   selected: number | null;
   onOpen: (n: number) => void;
-  shown: number;
-  total: number;
-  onToggleAll: () => void;
-  showingAll: boolean;
+  pageSize: number;
 }) {
+  const paged = usePaged(rows, pageSize);
   return (
     <Panel className="overflow-hidden">
       <div className="flex flex-wrap items-center gap-2 border-line border-b px-4 py-3">
         <span className="mr-1 text-[13px] text-ink-3">Estado:</span>
         <FilterChips
           label="Estado de la parcela"
-          onChange={onStatus}
+          onChange={(s) => {
+            paged.reset();
+            onStatus(s);
+          }}
           options={[
             { count: counts.all, id: "all", label: "Todas" },
             { count: counts.locked, id: "locked", label: "Bloqueadas" },
@@ -68,7 +68,10 @@ export function PlotTable({
           <span className="sr-only">Buscar parcela</span>
           <input
             className="w-44 border-0 bg-transparent outline-none"
-            onChange={(e) => onSearch(e.target.value)}
+            onChange={(e) => {
+              paged.reset();
+              onSearch(e.target.value);
+            }}
             placeholder="Buscar N° o sector"
             type="search"
             value={search}
@@ -92,7 +95,7 @@ export function PlotTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {paged.items.map((r) => (
             <tr
               className={cn(r.number === selected && "bg-sel")}
               key={r.number}
@@ -129,16 +132,14 @@ export function PlotTable({
           ) : null}
         </tbody>
       </Table>
-      <div className="flex items-center gap-2 border-line-2 border-t px-4 py-2.5 text-ink-3 text-xs">
-        Mostrando {shown} de {total} ·
-        <button
-          className="cursor-pointer border-0 bg-transparent p-0 text-ink underline"
-          onClick={onToggleAll}
-          type="button"
-        >
-          {showingAll ? "Ver menos" : "Ver todas"}
-        </button>
-      </div>
+      <Pager
+        bordered
+        label="parcelas"
+        onPage={paged.setPage}
+        page={paged.page}
+        pageSize={paged.pageSize}
+        total={paged.total}
+      />
     </Panel>
   );
 }

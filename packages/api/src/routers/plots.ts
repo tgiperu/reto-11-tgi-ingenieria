@@ -1,4 +1,8 @@
-import { brigade, sector } from "@reto-11-tgi-ingenieria/db/schema/catalog";
+import {
+  brigade,
+  sector,
+  species,
+} from "@reto-11-tgi-ingenieria/db/schema/catalog";
 import {
   auditLog,
   measurement,
@@ -510,11 +514,38 @@ export const plotsRouter = router({
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       const [row] = await ctx.db
-        .select()
+        .select({
+          category: measurement.category,
+          code: tree.code,
+          createdAt: measurementPhoto.createdAt,
+          dapEq: measurement.dapEq,
+          data: measurementPhoto.data,
+          height: measurement.height,
+          mime: measurementPhoto.mime,
+          plotNumber: measurement.plotNumber,
+          species: species.name,
+        })
         .from(measurementPhoto)
+        .innerJoin(
+          measurement,
+          eq(measurement.id, measurementPhoto.measurementId)
+        )
+        .innerJoin(tree, eq(tree.id, measurement.treeId))
+        .leftJoin(species, eq(species.id, measurement.speciesId))
         .where(eq(measurementPhoto.measurementId, input.id))
         .limit(1);
-      return row ? { dataUrl: `data:${row.mime};base64,${row.data}` } : null;
+      return row
+        ? {
+            category: row.category,
+            code: row.code,
+            createdAt: row.createdAt.toISOString(),
+            dapEq: row.dapEq,
+            dataUrl: `data:${row.mime};base64,${row.data}`,
+            height: row.height,
+            plot: row.plotNumber,
+            species: row.species ?? "Sin especie",
+          }
+        : null;
     }),
 
   records: staffProcedure

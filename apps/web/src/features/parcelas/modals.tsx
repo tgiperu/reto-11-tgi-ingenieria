@@ -14,12 +14,14 @@ import {
 } from "@reto-11-tgi-ingenieria/domain/health";
 import { parseDecimal } from "@reto-11-tgi-ingenieria/domain/measure";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Download } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/app/button";
 import { SelectField, TextAreaField, TextField } from "@/components/app/field";
 import { Modal } from "@/components/app/modal";
+import { fmtDateTime, fmtNum, fmtTime } from "@/lib/format";
 import { trpc } from "@/utils/trpc";
 
 export function ReasonModal({
@@ -145,16 +147,74 @@ export function PhotoModal({
     ...trpc.plots.photo.queryOptions({ id: id ?? "" }),
     enabled: id !== null,
   });
+  const [zoom, setZoom] = useState(false);
+  const info = photo.data;
+  const title = info
+    ? `${info.species} · ${fmtTime(info.createdAt)} · P-${info.plot}`
+    : "Evidencia";
   return (
-    <Modal onClose={onClose} open={id !== null} title="Foto del individuo">
+    <Modal
+      onClose={() => {
+        setZoom(false);
+        onClose();
+      }}
+      open={id !== null}
+      size="lg"
+      title={title}
+    >
       {photo.isPending ? <p className="text-ink-3 text-sm">Cargando…</p> : null}
-      {photo.data ? (
-        // biome-ignore lint/correctness/useImageSize: imagen de tamaño variable (foto del equipo)
-        <img
-          alt="Foto tomada en campo"
-          className="max-h-[60vh] w-full rounded-lg object-contain"
-          src={photo.data.dataUrl}
-        />
+      {info ? (
+        <>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-ink-2">
+            <span>
+              Cargada el <strong>{fmtDateTime(info.createdAt)}</strong>
+            </span>
+            <span>
+              N° <strong className="font-mono">{info.code}</strong>
+            </span>
+            <span>{info.category}</span>
+            {info.dapEq === null ? null : (
+              <span className="font-mono">DAP {fmtNum(info.dapEq)} cm</span>
+            )}
+            {info.height === null ? null : (
+              <span className="font-mono">Altura {fmtNum(info.height)} m</span>
+            )}
+          </div>
+          <div
+            className={`overflow-auto rounded-lg bg-sunken ${zoom ? "max-h-[65vh]" : ""}`}
+          >
+            {/* biome-ignore lint/correctness/useImageSize: imagen de tamaño variable (foto del equipo) */}
+            <img
+              alt={`Evidencia de ${info.species}, parcela P-${info.plot}`}
+              className={
+                zoom
+                  ? "max-w-none cursor-zoom-out"
+                  : "max-h-[60vh] w-full cursor-zoom-in object-contain"
+              }
+              onClick={() => setZoom((z) => !z)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  setZoom((z) => !z);
+                }
+              }}
+              src={info.dataUrl}
+              tabIndex={0}
+              title={zoom ? "Reducir" : "Ampliar"}
+            />
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-ink-3 text-xs">
+              Haz clic en la imagen para {zoom ? "reducirla" : "ampliarla"}.
+            </span>
+            <a
+              className="inline-flex min-h-9 items-center gap-1.5 font-semibold text-[13px] text-ink-2 hover:text-ink hover:underline"
+              download={`evidencia-P${info.plot}-${info.code}.jpg`}
+              href={info.dataUrl}
+            >
+              <Download aria-hidden="true" size={16} /> Descargar
+            </a>
+          </div>
+        </>
       ) : null}
       {photo.data === null ? (
         <p className="text-ink-3 text-sm">Este registro no tiene foto.</p>

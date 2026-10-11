@@ -22,6 +22,7 @@ import {
 import { useState } from "react";
 
 import { DateRangePicker } from "@/components/app/date-range";
+import { Modal } from "@/components/app/modal";
 import {
   type MenuOption,
   MenuShell,
@@ -30,7 +31,7 @@ import {
 } from "@/components/app/select-menu";
 import { fmtIsoDay } from "@/lib/format";
 
-export type PeriodKind = "all" | "today" | "week" | "custom";
+export type PeriodKind = "today" | "week" | "custom";
 
 export interface PanelFilters {
   anp: "all" | Anp;
@@ -43,7 +44,7 @@ export interface PanelFilters {
 
 export const DEFAULT_FILTERS: PanelFilters = {
   anp: "all",
-  period: { kind: "all" },
+  period: { kind: "today" },
   speciesId: null,
   status: "open",
   stratum: "all",
@@ -105,11 +106,6 @@ const PERIOD_OPTIONS: {
   label: string;
   icon: React.ReactNode;
 }[] = [
-  {
-    icon: <Globe aria-hidden="true" size={ICON} />,
-    id: "all",
-    label: "Todo el periodo",
-  },
   { icon: <Sun aria-hidden="true" size={ICON} />, id: "today", label: "Hoy" },
   {
     icon: <Timer aria-hidden="true" size={ICON} />,
@@ -127,9 +123,7 @@ function periodLabel(period: PanelFilters["period"]): string {
   if (period.kind === "custom" && period.from && period.to) {
     return `${fmtIsoDay(period.from).slice(0, 5)} – ${fmtIsoDay(period.to)}`;
   }
-  return (
-    PERIOD_OPTIONS.find((o) => o.id === period.kind)?.label ?? "Todo el periodo"
-  );
+  return PERIOD_OPTIONS.find((o) => o.id === period.kind)?.label ?? "Hoy";
 }
 
 function PeriodMenu({
@@ -143,21 +137,15 @@ function PeriodMenu({
 }) {
   const [calendar, setCalendar] = useState(false);
   return (
-    <MenuShell
-      active={period.kind !== "all"}
-      icon={<CalendarDays aria-hidden="true" size={ICON} />}
-      label="Periodo"
-      onOpenChange={(open) => {
-        if (!open) {
-          setCalendar(false);
-        }
-      }}
-      valueLabel={periodLabel(period)}
-      wide={calendar}
-    >
-      {(close) => (
-        <>
-          {PERIOD_OPTIONS.map((o) => (
+    <>
+      <MenuShell
+        active={period.kind !== "today"}
+        icon={<CalendarDays aria-hidden="true" size={ICON} />}
+        label="Periodo"
+        valueLabel={periodLabel(period)}
+      >
+        {(close) =>
+          PERIOD_OPTIONS.map((o) => (
             <OptionRow
               icon={o.icon}
               key={o.id}
@@ -165,31 +153,36 @@ function PeriodMenu({
               onPick={() => {
                 if (o.id === "custom") {
                   setCalendar(true);
-                  return;
+                } else {
+                  onChange({ kind: o.id });
                 }
-                onChange({ kind: o.id });
                 close();
               }}
             >
               {o.label}
             </OptionRow>
-          ))}
-          {calendar ? (
-            <DateRangePicker
-              from={period.from ?? null}
-              max={dataRange.max}
-              min={dataRange.min}
-              onApply={(from, to) => {
-                onChange({ from, kind: "custom", to });
-                close();
-              }}
-              onCancel={close}
-              to={period.to ?? null}
-            />
-          ) : null}
-        </>
-      )}
-    </MenuShell>
+          ))
+        }
+      </MenuShell>
+      <Modal
+        onClose={() => setCalendar(false)}
+        open={calendar}
+        size="lg"
+        title="Rango de fechas"
+      >
+        <DateRangePicker
+          from={period.from ?? null}
+          max={dataRange.max}
+          min={dataRange.min}
+          onApply={(from, to) => {
+            onChange({ from, kind: "custom", to });
+            setCalendar(false);
+          }}
+          onCancel={() => setCalendar(false)}
+          to={period.to ?? null}
+        />
+      </Modal>
+    </>
   );
 }
 
@@ -207,7 +200,7 @@ export function FilterBar({
   const activeCount =
     (filters.anp === "all" ? 0 : 1) +
     (filters.stratum === "all" ? 0 : 1) +
-    (filters.period.kind === "all" ? 0 : 1) +
+    (filters.period.kind === "today" ? 0 : 1) +
     (filters.variable === "all" ? 0 : 1) +
     (filters.speciesId === null ? 0 : 1);
 

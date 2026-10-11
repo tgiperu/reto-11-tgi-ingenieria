@@ -2,13 +2,14 @@ import { parseDecimal } from "@reto-11-tgi-ingenieria/domain/measure";
 import { cn } from "@reto-11-tgi-ingenieria/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { CircleX, TriangleAlert } from "lucide-react";
+import { CircleX, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/app/button";
 import { Chip } from "@/components/app/chip";
 import { SelectField, TextField } from "@/components/app/field";
+import { Pager } from "@/components/app/pager";
 import {
   Notice,
   PageHeader,
@@ -17,7 +18,9 @@ import {
   Td,
   Th,
 } from "@/components/app/panel";
+import { NewRuleModal } from "@/features/alertas/new-rule-modal";
 import { fmtInt, fmtNum } from "@/lib/format";
+import { usePaged } from "@/lib/use-paged";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/_auth/_staff/alertas")({
@@ -27,6 +30,7 @@ export const Route = createFileRoute("/_auth/_staff/alertas")({
 interface RuleView {
   actionLabel: string;
   active: boolean;
+  custom: boolean;
   description: string;
   hits: number;
   hitsUnit: string;
@@ -46,12 +50,14 @@ function RuleRow({
   tested,
   onToggle,
   onParam,
+  onDelete,
 }: {
   rule: RuleView;
   editable: boolean;
   tested: number | undefined;
   onToggle: (active: boolean) => void;
   onParam: (param: number | null) => void;
+  onDelete: () => void;
 }) {
   const [text, setText] = useState(
     rule.param === null ? "" : String(rule.param)
@@ -92,8 +98,20 @@ function RuleRow({
       </Td>
       <Td>
         <div className="flex flex-col gap-0.5">
-          <strong className="font-semibold">{rule.name}</strong>
+          <strong className="flex items-center gap-2 font-semibold">
+            {rule.name}
+            {rule.custom ? <Chip tone="info">Personalizada</Chip> : null}
+          </strong>
           <span className="text-ink-3 text-xs">{rule.description}</span>
+          {rule.custom && editable ? (
+            <button
+              className="mt-0.5 inline-flex cursor-pointer items-center gap-1 self-start border-0 bg-transparent p-0 text-crit-fg text-xs hover:underline"
+              onClick={onDelete}
+              type="button"
+            >
+              <Trash2 aria-hidden="true" size={12} /> Eliminar alerta
+            </button>
+          ) : null}
         </div>
       </Td>
       <Td>
@@ -358,7 +376,20 @@ function AlertsPage() {
   const queryClient = useQueryClient();
   const rules = useQuery(trpc.alerts.rules.list.queryOptions());
   const [tested, setTested] = useState<Record<string, number> | null>(null);
+  const [newOpen, setNewOpen] = useState(false);
   const onError = (e: { message: string }) => toast.error(e.message);
+  const remove = useMutation(
+    trpc.alerts.rules.deleteCustom.mutationOptions({
+      onError,
+      onSuccess: async () => {
+        setTested(null);
+        toast.success("Alerta eliminada");
+        await queryClient.invalidateQueries({
+          queryKey: trpc.alerts.rules.list.queryKey(),
+        });
+      },
+    })
+  );
   const update = useMutation(
     trpc.alerts.rules.update.mutationOptions({
       onError,
@@ -395,11 +426,15 @@ function AlertsPage() {
   );
 
   const { data } = rules;
+  const pagedRules = usePaged(data?.rules ?? [], 10);
   return (
     <>
       <PageHeader
         actions={
           <>
+            <Button disabled={!editable} onClick={() => setNewOpen(true)}>
+              <Plus aria-hidden="true" size={16} /> Nueva alerta
+            </Button>
             <Button
               disabled={!editable || test.isPending}
               onClick={() => test.mutate()}
@@ -417,8 +452,12 @@ function AlertsPage() {
             </Button>
           </>
         }
-        subtitle="Las reglas se publican como un paquete versionado y se descargan a la app: se evalúan en tiempo real en campo, sin conexión, y otra vez en el servidor al sincronizar."
         title="Reglas de alerta y validación"
+      />
+      <NewRuleModal
+        key={`new-rule-${newOpen}`}
+        onClose={() => setNewOpen(false)}
+        open={newOpen}
       />
       {data ? (
         <div className="flex flex-wrap items-center gap-2 text-[13px] text-ink-2">
@@ -447,10 +486,11 @@ function AlertsPage() {
             </tr>
           </thead>
           <tbody>
-            {data?.rules.map((r) => (
+            {pagedRules.items.map((r) => (
               <RuleRow
                 editable={editable}
                 key={r.key}
+                onDelete={() => remove.mutate({ key: r.key })}
                 onParam={(param) => update.mutate({ key: r.key, param })}
                 onToggle={(active) => update.mutate({ active, key: r.key })}
                 rule={r}
@@ -459,6 +499,14 @@ function AlertsPage() {
             ))}
           </tbody>
         </Table>
+        <Pager
+          bordered
+          label="reglas"
+          onPage={pagedRules.setPage}
+          page={pagedRules.page}
+          pageSize={pagedRules.pageSize}
+          total={pagedRules.total}
+        />
       </Panel>
       <div className="flex flex-wrap items-start gap-4">
         <RangeEditor editable={editable} />

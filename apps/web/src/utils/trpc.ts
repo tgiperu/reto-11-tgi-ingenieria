@@ -19,9 +19,17 @@ function getServerUrl(url: string) {
   return resolved.endsWith("/") ? resolved.slice(0, -1) : resolved;
 }
 
+function isUnauthorized(error: unknown): boolean {
+  const code = (error as { data?: { code?: string } } | null)?.data?.code;
+  return code === "UNAUTHORIZED";
+}
+
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: (error, query) => {
+      if (isUnauthorized(error)) {
+        return;
+      }
       toast.error(error.message, {
         action: {
           label: "retry",

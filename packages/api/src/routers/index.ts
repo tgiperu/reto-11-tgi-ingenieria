@@ -8,8 +8,10 @@ import { dashboardRouter } from "./dashboard";
 import { importsRouter } from "./imports";
 import { plotsRouter } from "./plots";
 import { syncRouter } from "./sync";
+import { accessRouter } from "./users";
 
 export const appRouter = router({
+  access: accessRouter,
   alerts: alertsRouter,
   catalog: catalogRouter,
   dashboard: dashboardRouter,

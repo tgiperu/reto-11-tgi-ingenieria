@@ -10,6 +10,7 @@ import {
 } from "@reto-11-tgi-ingenieria/domain/carbon";
 import {
   defaultRuleSettings,
+  isCustomKey,
   RULE_KEYS,
   type RuleSetting,
 } from "@reto-11-tgi-ingenieria/domain/rules";
@@ -68,10 +69,21 @@ export async function saveEquations(
 export async function getDraftRules(db: Database): Promise<RuleSetting[]> {
   const rows = await db.select().from(ruleSetting);
   const byKey = new Map(rows.map((r) => [r.key, r]));
-  return defaultRuleSettings().map((base) => {
+  const builtIn = defaultRuleSettings().map((base) => {
     const row = byKey.get(base.key);
     return row ? { active: row.active, key: base.key, param: row.param } : base;
   });
+  const custom = rows
+    .filter((r) => isCustomKey(r.key) && r.custom)
+    .map(
+      (r): RuleSetting => ({
+        active: r.active,
+        custom: r.custom,
+        key: r.key as RuleSetting["key"],
+        param: r.param,
+      })
+    );
+  return [...builtIn, ...custom];
 }
 
 export function ruleVersionLabel(id: number): string {
@@ -95,7 +107,9 @@ export async function getPublishedRules(db: Database): Promise<PublishedRules> {
     return { id: 0, label: "sin publicar", settings: defaultRuleSettings() };
   }
   const known = new Set<string>(RULE_KEYS);
-  const settings = row.settings.filter((s) => known.has(s.key));
+  const settings = row.settings.filter(
+    (s) => known.has(s.key) || (isCustomKey(s.key) && s.custom)
+  );
   const have = new Set(settings.map((s) => s.key));
   for (const base of defaultRuleSettings()) {
     if (!have.has(base.key)) {

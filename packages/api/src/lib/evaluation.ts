@@ -11,7 +11,6 @@ import {
   type EvalPrevious,
   evaluateMeasurement,
   type RuleAlert,
-  type RuleKey,
   type RuleSetting,
 } from "@reto-11-tgi-ingenieria/domain/rules";
 import { sql } from "drizzle-orm";
@@ -26,7 +25,7 @@ export async function loadSpecies(db: Database): Promise<SpeciesMap> {
 }
 
 /** Reglas que dependen del contexto del registro y no se pueden recalcular desde la fila sola. */
-export const CONTEXT_RULES: readonly RuleKey[] = [
+export const CONTEXT_RULES: readonly string[] = [
   "sp_prev",
   "dap_prev",
   "gps",

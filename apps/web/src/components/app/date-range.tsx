@@ -182,11 +182,10 @@ export function DateRangePicker({
   const presets = [
     { a: addDays(hi, -6), b: hi, label: "Últimos 7 días" },
     { a: addDays(hi, -13), b: hi, label: "Últimos 14 días" },
-    { a: lo, b: hi, label: "Todo el periodo" },
   ];
 
   return (
-    <div className="mt-1 flex flex-col gap-3 border-line-2 border-t px-2 pt-3 pb-2">
+    <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="mr-0.5 font-semibold text-ink-3 text-xs">Atajos</span>
         {presets.map((p) => {

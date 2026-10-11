@@ -91,14 +91,22 @@ export function EmptyState({
 export function Table({
   children,
   minWidth = 720,
+  maxHeight = "min(60vh, 520px)",
+  fixed = false,
 }: {
   children: ReactNode;
   minWidth?: number;
+  maxHeight?: string;
+  /** Anchos de columna fijos (usar con <colgroup>). */
+  fixed?: boolean;
 }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="table-scroll overflow-auto" style={{ maxHeight }}>
       <table
-        className="w-full border-collapse text-[13px]"
+        className={cn(
+          "w-full border-collapse text-[13px]",
+          fixed && "table-fixed"
+        )}
         style={{ minWidth }}
       >
         {children}
@@ -114,7 +122,7 @@ export function Th({
   return (
     <th
       className={cn(
-        "bg-sunken px-2 py-2.5 text-left font-semibold text-ink-3 text-xs uppercase tracking-wider first:pl-4 last:pr-4",
+        "sticky top-0 z-10 bg-sunken px-2 py-2.5 text-left font-semibold text-ink-3 text-xs uppercase tracking-wider first:pl-4 last:pr-4",
         className
       )}
       {...rest}

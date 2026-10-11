@@ -1,21 +1,16 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import {
-  LogOut,
-  Monitor,
-  Plus,
-  Settings2,
-  TriangleAlert,
-} from "lucide-react";
+import { LogOut, Monitor, Plus, Settings2, TriangleAlert } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "@/components/app/button";
 import { EmptyState } from "@/components/app/panel";
+import { SignOutDialog } from "@/components/shell/sign-out-dialog";
 import { FieldShell } from "@/features/campo/field-shell";
 import { useBundleMeta, useNow } from "@/features/campo/hooks";
 import { RecordRow } from "@/features/campo/record-row";
 import { shortClock } from "@/lib/format";
 import { campoDb } from "@/lib/offline/db";
-import { signOut } from "@/lib/session";
 
 export const Route = createFileRoute("/_auth/campo/")({
   component: FieldHome,
@@ -26,7 +21,6 @@ const HEADER_BUTTON =
 
 function FieldHome() {
   const { session } = Route.useRouteContext();
-  const navigate = useNavigate();
   const now = useNow();
   const bundle = useBundleMeta();
   const plots = useLiveQuery(() => campoDb.plots.count(), [], 0);
@@ -41,10 +35,7 @@ function FieldHome() {
   const isStaff = session.user.role !== "brigadista";
   const ready = plots > 0 && Boolean(bundle);
 
-  async function onSignOut() {
-    await signOut();
-    await navigate({ to: "/login" });
-  }
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
   return (
     <FieldShell
@@ -105,7 +96,7 @@ function FieldHome() {
               <button
                 aria-label="Cerrar sesión"
                 className={HEADER_BUTTON}
-                onClick={onSignOut}
+                onClick={() => setSignOutOpen(true)}
                 title="Cerrar sesión"
                 type="button"
               >
@@ -189,6 +180,7 @@ function FieldHome() {
           </ul>
         )}
       </section>
+      <SignOutDialog onClose={() => setSignOutOpen(false)} open={signOutOpen} />
     </FieldShell>
   );
 }
