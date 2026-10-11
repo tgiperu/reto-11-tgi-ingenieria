@@ -97,7 +97,9 @@ function worst(alerts: readonly RuleAlert[]): Severity | null {
   if (alerts.length === 0) {
     return null;
   }
-  return alerts.some((a) => a.severity === "critical") ? "critical" : "warning";
+  return alerts.some((a) => a.severity === "critical" || a.blocking)
+    ? "critical"
+    : "warning";
 }
 
 function codeBorderClass(duplicate: boolean, isRemeasure: boolean): string {
@@ -371,7 +373,10 @@ export function RegistroForm({ editId }: { editId?: string }) {
     clino.distance !== null && clino.pctBase !== null && clino.pctTop !== null
       ? clinometerHeight(clino.distance, clino.pctBase, clino.pctTop)
       : null;
-  const height = hMode === "direct" ? parseDecimal(hDirect) : clinoHeight;
+  let height: number | null = null;
+  if (category !== "br") {
+    height = hMode === "direct" ? parseDecimal(hDirect) : clinoHeight;
+  }
   const heightIssue = category === "br" ? null : heightError(height);
   const gpsDistance =
     fix && plot && plot.lat !== null && plot.lon !== null
@@ -583,7 +588,9 @@ export function RegistroForm({ editId }: { editId?: string }) {
       return;
     }
     if (blocked) {
-      toast.warning("Corrige las alertas en rojo antes de guardar");
+      toast.warning(
+        `Corrige antes de guardar: ${alerts.find((a) => a.blocking)?.title ?? "alertas en rojo"}`
+      );
       return;
     }
     if (hasAlerts) {
@@ -591,6 +598,40 @@ export function RegistroForm({ editId }: { editId?: string }) {
       return;
     }
     await doSave();
+  }
+
+  /** Al cambiar de categoría se borran los campos que dejan de mostrarse. */
+  function onCategory(next: CategoryKey) {
+    setCategory(next);
+    if (!isTreeCategory(next)) {
+      setStems([""]);
+    }
+    if (next !== "ar") {
+      setCrownMin("");
+      setCrownMax("");
+    }
+    if (next === "br") {
+      setHMode("direct");
+      setHDirect("");
+      setDist("");
+      setP0("");
+      setP1("");
+    } else {
+      setDac1("");
+      setDac2("");
+    }
+  }
+
+  /** Al cambiar la forma de medir la altura se borra la que queda oculta. */
+  function onHeightMode(next: HeightMode) {
+    setHMode(next);
+    if (next === "direct") {
+      setDist("");
+      setP0("");
+      setP1("");
+    } else {
+      setHDirect("");
+    }
   }
 
   async function onPhoto(file: Blob | null) {
@@ -738,7 +779,7 @@ export function RegistroForm({ editId }: { editId?: string }) {
           help="Clase del individuo según su tamaño: latizal alto, fustal, arbusto grande o brinzal. Define el radio de la subparcela."
           items={categoryItems}
           label="Categoría"
-          onPick={setCategory}
+          onPick={onCategory}
           placeholder="Buscar categoría"
           selected={category}
         />
@@ -761,7 +802,6 @@ export function RegistroForm({ editId }: { editId?: string }) {
         {isTreeCategory(category) ? (
           <StemsSection
             alert={worst(zones.size)}
-            code={code}
             eq={eq}
             onChange={setStems}
             reference={sizeReference}
@@ -803,7 +843,7 @@ export function RegistroForm({ editId }: { editId?: string }) {
             mode={hMode}
             onDirect={setHDirect}
             onDist={setDist}
-            onMode={setHMode}
+            onMode={onHeightMode}
             onP0={setP0}
             onP1={setP1}
             p0={p0}

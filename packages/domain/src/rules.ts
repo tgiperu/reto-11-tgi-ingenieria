@@ -363,6 +363,21 @@ function makeAlert(
   return { blocking: blocks(rule), rule, severity, text, title };
 }
 
+function nnMissingText(
+  photosNeeded: number,
+  photos: number,
+  hasComment: boolean
+): string {
+  const missing: string[] = [];
+  if (photos < photosNeeded) {
+    missing.push("una foto");
+  }
+  if (!hasComment) {
+    missing.push("un comentario en Observaciones");
+  }
+  return `Para guardarla falta agregar ${missing.join(" y ")} que ayude a identificarla.`;
+}
+
 function cm(value: number): string {
   return `${value.toFixed(2)} cm`;
 }
@@ -556,7 +571,7 @@ export function evaluateMeasurement(
           "nn",
           "warning",
           "Especie sin identificar (NN)",
-          "Agrega al menos una foto y un comentario que ayude a identificarla."
+          nnMissingText(needed, input.photoCount, hasComment)
         )
       );
     }

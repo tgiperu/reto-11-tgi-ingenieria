@@ -130,14 +130,12 @@ function Readout({ label, value }: { label: string; value: string }) {
 
 export function StemsSection({
   stems,
-  code,
   onChange,
   eq,
   alert,
   reference,
 }: {
   stems: string[];
-  code: string;
   onChange: (stems: string[]) => void;
   eq: string;
   alert?: Severity | null;
@@ -160,14 +158,9 @@ export function StemsSection({
       title="DAP por eje (cm) · a 1.30 m"
     >
       {stems.map((value, i) => {
-        const label =
-          stems.length > 1 ? `${code || "?"}.${i + 1}` : code || "?";
         return (
           // biome-ignore lint/suspicious/noArrayIndexKey: los ejes se identifican por su posición
           <div className="flex items-center gap-2.5" key={i}>
-            <span className="w-14 flex-none font-mono text-ink-2 text-sm">
-              {label}
-            </span>
             <div className="flex-1">
               <NumField
                 label={`DAP del eje ${i + 1} (cm)`}
@@ -552,7 +545,7 @@ export function AlertList({ alerts }: { alerts: readonly RuleAlert[] }) {
   return (
     <>
       {alerts.map((a) => {
-        const critical = a.severity === "critical";
+        const critical = a.severity === "critical" || a.blocking;
         return (
           <div
             className={cn(
