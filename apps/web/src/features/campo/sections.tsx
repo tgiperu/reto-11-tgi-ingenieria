@@ -9,25 +9,45 @@ import { Camera, CircleX, Images, Trash2, TriangleAlert } from "lucide-react";
 import { type ReactNode, useEffect, useId, useState } from "react";
 
 import { Button } from "@/components/app/button";
+import {
+  HelpButton,
+  HelpLabel,
+  HelpNote,
+  useHelp,
+} from "@/components/app/help-tip";
 
 const INPUT =
   "min-h-12 w-full rounded-md border border-field bg-white px-3 font-mono text-base text-ink";
 
 export function Section({
   title,
+  help,
   aside,
   children,
 }: {
   title: string;
+  help: string;
   aside?: ReactNode;
   children: ReactNode;
 }) {
+  const { noteId, open, toggle } = useHelp();
   return (
     <section className="flex flex-col gap-2 rounded-lg border border-line bg-white p-3">
       <div className="flex items-center justify-between gap-2">
-        <strong className="text-sm">{title}</strong>
+        <div className="flex items-center gap-0.5">
+          <strong className="text-sm">{title}</strong>
+          <HelpButton
+            label={title}
+            noteId={noteId}
+            onToggle={toggle}
+            open={open}
+          />
+        </div>
         {aside}
       </div>
+      <HelpNote id={noteId} open={open}>
+        {help}
+      </HelpNote>
       {children}
     </section>
   );
@@ -35,12 +55,14 @@ export function Section({
 
 export function NumField({
   label,
+  help,
   value,
   onChange,
   large,
   invalid,
 }: {
   label: string;
+  help?: string;
   value: string;
   onChange: (value: string) => void;
   large?: boolean;
@@ -49,9 +71,14 @@ export function NumField({
   const id = useId();
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-ink-2 text-xs" htmlFor={id}>
+      <HelpLabel
+        className="text-ink-2 text-xs"
+        help={help}
+        htmlFor={id}
+        label={label}
+      >
         {label}
-      </label>
+      </HelpLabel>
       <input
         aria-invalid={invalid ? true : undefined}
         className={cn(
@@ -100,6 +127,7 @@ export function StemsSection({
           + Eje
         </Button>
       }
+      help="Diámetro del tronco medido con cinta diamétrica a 1.30 m del suelo, en cm. Si el árbol tiene varios ejes (troncos), mide cada uno y toca «+ Eje»."
       title="DAP por eje (cm) · a 1.30 m"
     >
       {stems.map((value, i) => {
@@ -157,10 +185,23 @@ export function CrownSection({
   avg: string;
 }) {
   return (
-    <Section title="Diámetro de copa (m)">
+    <Section
+      help="Ancho de la copa visto desde arriba, en metros. Mide el diámetro menor y el mayor; el promedio se calcula solo."
+      title="Diámetro de copa (m)"
+    >
       <div className="grid grid-cols-2 gap-2">
-        <NumField label="Menor" onChange={onMin} value={min} />
-        <NumField label="Mayor" onChange={onMax} value={max} />
+        <NumField
+          help="Diámetro más corto de la copa."
+          label="Menor"
+          onChange={onMin}
+          value={min}
+        />
+        <NumField
+          help="Diámetro más largo de la copa."
+          label="Mayor"
+          onChange={onMax}
+          value={max}
+        />
       </div>
       <Readout label="Promedio" value={`${avg} m`} />
     </Section>
@@ -181,10 +222,23 @@ export function DacSection({
   avg: string;
 }) {
   return (
-    <Section title="DAC (cm) · a 5 cm del suelo">
+    <Section
+      help="Diámetro a la altura del cuello: grosor del tallo a 5 cm del suelo, en cm. Toma dos lecturas; se promedian solas."
+      title="DAC (cm) · a 5 cm del suelo"
+    >
       <div className="grid grid-cols-2 gap-2">
-        <NumField label="Lectura 1" onChange={onA} value={a} />
-        <NumField label="Lectura 2" onChange={onB} value={b} />
+        <NumField
+          help="Primera medida del tallo a 5 cm del suelo."
+          label="Lectura 1"
+          onChange={onA}
+          value={a}
+        />
+        <NumField
+          help="Segunda medida del tallo, tomada en otra dirección."
+          label="Lectura 2"
+          onChange={onB}
+          value={b}
+        />
       </div>
       <Readout label="Promedio" value={`${avg} cm`} />
     </Section>
@@ -250,6 +304,7 @@ export function HeightSection({
           ))}
         </fieldset>
       }
+      help="Distancia vertical del suelo a la punta más alta del árbol, en metros. Puedes escribirla directa o calcularla con clinómetro."
       title="Altura total (m)"
     >
       {mode === "direct" ? (
@@ -264,12 +319,23 @@ export function HeightSection({
         <>
           <div className="grid grid-cols-3 gap-2">
             <NumField
+              help="Distancia horizontal de ti al árbol, en metros."
               label="Distancia (m)"
               onChange={(v) => onDist(sanitizePositiveDecimal(v))}
               value={dist}
             />
-            <NumField label="% base" onChange={onP0} value={p0} />
-            <NumField label="% copa" onChange={onP1} value={p1} />
+            <NumField
+              help="Lectura del clinómetro (%) al mirar la base del tronco."
+              label="% base"
+              onChange={onP0}
+              value={p0}
+            />
+            <NumField
+              help="Lectura del clinómetro (%) al mirar la punta de la copa."
+              label="% copa"
+              onChange={onP1}
+              value={p1}
+            />
           </div>
           <Readout label="Calculada" value={`${computed} m`} />
         </>
@@ -299,6 +365,7 @@ export function HealthSection({
           {required ? "Obligatorio" : "Opcional en brinzales"}
         </span>
       }
+      help="Condición actual del árbol: sano, dañado o con plagas, quemado o muerto en pie. Elige la que mejor lo describa."
       title="Estado sanitario"
     >
       <fieldset
@@ -367,6 +434,7 @@ export function PhotoSection({
           {hint}
         </span>
       }
+      help="Foto del árbol completo con la placa visible. Es obligatoria para especie NN y recomendada si hay alertas."
       title="Foto del árbol"
     >
       {photo && url ? (
